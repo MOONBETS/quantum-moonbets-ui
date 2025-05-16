@@ -67,7 +67,7 @@ export class TransactionService {
       // Place bet
       await this.program.methods
         .play(betNumber, betAmount, clientSeed)
-        .accounts({
+        .accountsStrict({
           payer: this.publicKey,
           player: this.playerPda,
           platformVault: this.platformVault,
@@ -141,7 +141,6 @@ export class TransactionService {
         .withdraw()
         .accounts({
           payer: this.publicKey,
-          player: this.playerPda,
           platformVault: this.platformVault,
         })
         .rpc();
@@ -157,16 +156,18 @@ export class TransactionService {
       await this.program.methods
         .initializePlatform()
         .accounts({
-          payer: this.publicKey,
-          platformVault: this.platformVault,
+          admin: this.publicKey, // ✅ Use 'admin' not 'payer'
           platformStats: this.platformStats,
+          // systemProgram: SystemProgram.programId,
         })
         .rpc();
+
       console.log("Platform initialized successfully");
     } catch (e) {
       console.error("Platform initialization failed:", e);
     }
   }
+
 
 
 }
