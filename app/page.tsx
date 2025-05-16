@@ -1,0 +1,443 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { RotateCcw, Coins } from "lucide-react";
+import confetti from "canvas-confetti";
+import MoonBackground from "@/components/moon-background";
+import { cn } from "@/lib/utils";
+import Footer from "@/components/footer";
+import Header from "@/components/header";
+import Particles from "@/components/particles";
+import Stats from "@/components/bets-stats";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { AnchorProvider, Program, BN, web3 } from "@coral-xyz/anchor";
+import idl from "./moonbets.json";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { TransactionService } from "./services/transactions";
+import { MoonbetsProgram } from "./types/program";
+import { Player } from "./types/accounts";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { toast } from "react-hot-toast";
+
+export default function CasinoGame() {
+  const [betAmount, setBetAmount] = useState(0.01);
+  const [balance, setBalance] = useState(0);
+  const [lastResults, setLastResults] = useState<Array<"win" | "lose">>([]);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [showResult, setShowResult] = useState<"win" | "lose" | null>(null);
+  const { connection } = useConnection();
+  const wallet = useWallet();
+  const { publicKey, signTransaction, signAllTransactions, connected } = wallet;
+  const [program, setProgram] = useState<MoonbetsProgram | null>(null);
+  const [playerPda, setPlayerPda] = useState<PublicKey | null>(null);
+  const [stats, setStats] = useState<Player | null>(null);
+  const [txService, setTxService] = useState<TransactionService | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [walletConnected, setWalletConnected] = useState(false);
+
+  const programID = new web3.PublicKey(idl.address);
+  const seed = "playerd";
+  const COMMITMENT = "confirmed";
+
+  const platformVault = new PublicKey("A6bd4tyLHA7ad1MVHTi28JpqDFjifuoQbaTbznzUe9BD");
+  const platformStats = new PublicKey("7UDEJe6mECcAMVTTRF4YdUDRee6EbvegqsuB7mCKq1vh");
+  const vrfProgramAddress = new PublicKey("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
+
+  // Track wallet connection status
+  useEffect(() => {
+    setWalletConnected(connected);
+  }, [connected]);
+
+  // Set up program when wallet is connected
+  useEffect(() => {
+    if (!publicKey) return;
+
+    const provider = new AnchorProvider(
+      connection,
+      { publicKey, signTransaction, signAllTransactions } as any,
+      { commitment: COMMITMENT }
+    );
+    const prog = new Program(idl, provider) as unknown as MoonbetsProgram;
+    setProgram(prog);
+
+    (async () => {
+      const [pda] = web3.PublicKey.findProgramAddressSync(
+        [Buffer.from(seed), publicKey.toBytes()],
+        programID
+      );
+      setPlayerPda(pda);
+    })();
+
+    // Fetch wallet balance
+    fetchWalletBalance();
+  }, [connection, publicKey, connected]);
+
+  // Set up transaction service
+  useEffect(() => {
+    if (!program || !playerPda || !publicKey) return;
+    
+    const service = new TransactionService(
+      program,
+      playerPda,
+      publicKey,
+      platformVault,
+      platformStats,
+      vrfProgramAddress
+    );
+    setTxService(service);
+
+    // Check if player account exists and initialize if needed
+    // checkPlayerAccount();
+  }, [program, playerPda, publicKey]);
+
+  // Fetch wallet SOL balance
+  const fetchWalletBalance = async () => {
+    if (!publicKey || !connection) return;
+    try {
+      const balance = await connection.getBalance(publicKey);
+      setBalance(balance / LAMPORTS_PER_SOL);
+    } catch (e) {
+      console.error("Failed to fetch balance:", e);
+      setErrorMessage("Failed to fetch wallet balance");
+    }
+  };
+
+  // Check if player account exists
+  // const checkPlayerAccount = async () => {
+  //   if (!program || !playerPda) return;
+    
+  //   try {
+  //     await getStats();
+  //   } catch (e) {
+  //     console.log("Player account doesn't exist, needs initialization");
+  //     await initializePlayer();
+  //   }
+  // };
+
+  // Get player stats from the program
+  const getStats = async () => {
+    if (!program || !playerPda) return;
+    
+    try {
+      const account = await program.account.player.fetch(playerPda);
+      setStats(account);
+      console.log("Player stats:", account);
+      
+      /// Generate last results based on wins and losses count
+      if (account.wins !== undefined && account.losses !== undefined) {
+        const wins = parseInt(account.wins.toString());
+        const losses = parseInt(account.losses.toString());
+        
+        // Create an array with the most recent 10 results (assuming wins are more recent)
+        const results: Array<"win" | "lose"> = [];
+        
+        // Add the most recent results first (we'll assume wins are most recent if both exist)
+        const totalGames = Math.min(wins + losses, 10);
+        let remainingWins = wins;
+        let remainingLosses = losses;
+        
+        for (let i = 0; i < totalGames; i++) {
+          if (remainingWins > 0 && (remainingWins >= remainingLosses || remainingLosses === 0)) {
+            results.push("win");
+            remainingWins--;
+          } else if (remainingLosses > 0) {
+            results.push("lose");
+            remainingLosses--;
+          }
+        }
+        
+        setLastResults(results);
+      }
+      
+      return account;
+    } catch (e) {
+      console.error("Failed to fetch stats:", e);
+      throw e;
+    }
+  };
+
+  // Initialize player account
+  const initializePlayer = async () => {
+    if (!txService) return;
+    
+    try {
+      setErrorMessage("Initializing player account...");
+      await txService.initializePlayer();
+      const playerStats = await getStats();
+      setErrorMessage("Player account initialized successfully!");
+      setTimeout(() => setErrorMessage(""), 3000);
+      return playerStats;
+    } catch (e) {
+      console.error("Failed to initialize player:", e);
+      setErrorMessage("Failed to initialize player: " + (e as Error).message);
+      throw e;
+    }
+  };
+
+  // Place a bet
+  const placeBet = async () => {
+    if (!txService || !publicKey) return;
+    
+    try {
+      setIsSpinning(true);
+      setShowResult(null);
+      
+      // Convert bet amount to lamports (SOL's smallest unit)
+      const betLamports = new BN(betAmount * LAMPORTS_PER_SOL);
+      
+      // Place the bet transaction
+      const betResult = await txService.placeBet(betLamports.toString());
+      
+      // Refresh player stats
+      const updatedStats = await getStats();
+      
+      // Determine if the bet was a win or loss
+      // Compare the current stats with previous stats
+      if (updatedStats) {
+        let result: "win" | "lose" = "lose";
+        
+        // Logic to determine if the player won:
+        // If stats.wins increased after the bet, it was a win
+        if (stats && updatedStats.wins && stats.wins && 
+            updatedStats.wins > stats.wins) {
+          result = "win";
+        }
+        
+        // Update the UI
+        setShowResult(result);
+        
+        // Trigger confetti on win
+        if (result === "win") {
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              spread: 200,
+              origin: { y: 0.6 },
+              colors: [
+                "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", 
+                "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
+                "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
+              ],
+            });
+          }, 500);
+        }
+      }
+      
+      // Refresh wallet balance
+      await fetchWalletBalance();
+      
+    } catch (e) {
+      console.error("Failed to place bet:", e);
+      setErrorMessage("Failed to place bet: " + (e as Error).message);
+    } finally {
+      setIsSpinning(false);
+    }
+  };
+
+  // Withdraw winnings
+  const withdrawWinnings = async () => {
+    if (!txService) return;
+    
+    try {
+      await txService.withdraw();
+      await getStats();
+      await fetchWalletBalance();
+      toast.success("Winnings withdrawn successfully!");
+    } catch (e) {
+      console.error("Failed to withdraw:", e);
+      setErrorMessage("Failed to withdraw: " + (e as Error).message);
+    }
+  };
+
+  // Reset error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  // Check if betting is allowed
+  const canBet = connected && !isSpinning && betAmount > 0 && betAmount <= balance;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] to-[#1a1a3a] text-white overflow-hidden relative flex flex-col">
+      {/* Moon background */}
+      <MoonBackground />
+
+      <div className="container mx-auto px-4 py-6 relative z-10 h-full flex-grow">
+        <Header
+          setLastResults={setLastResults}
+          setShowResult={setShowResult}
+        />
+
+
+        {/* Error message display */}
+        {errorMessage && (
+          <div className="w-full max-w-md mx-auto mb-4 p-3 bg-red-900/50 text-white rounded-md text-center">
+            {errorMessage}
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-3 gap-y-8 md:gap-8">
+          <Card className="lg:col-span-2 bg-black/40 border-blue-500/30 backdrop-blur-sm overflow-hidden">
+            <CardContent className="p-0">
+              <div className="relative h-full">
+                {/* Background decoration */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                  <div className="w-96 h-96 rounded-full bg-blue-300 blur-3xl"></div>
+                </div>
+
+                <div className="relative p-8 flex flex-col items-center justify-center min-h-[400px]">
+                  {/* Bet amount input with fancy border */}
+                  <div className="mb-8 w-full max-w-xs">
+                    <label className="block text-center mb-2 text-xl font-bold text-blue-200">
+                      BET AMOUNT
+                    </label>
+                    <div className="relative">
+                      {/* Fancy input border wrapper */}
+                      <div className="relative p-[2px] rounded-md overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-gradient-x">
+                        <Input
+                          type="number"
+                          value={betAmount}
+                          onChange={(e) =>
+                            setBetAmount(Number.parseFloat(e.target.value) || 0)
+                          }
+                          className={cn(
+                            "text-center text-2xl py-6 bg-black border-0 text-white rounded-[3px]",
+                            !connected && "opacity-70"
+                          )}
+                          min={0.001}
+                          max={connected ? balance : 0}
+                          step={0.01}
+                          disabled={!connected || isSpinning}
+                        />
+                      </div>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300">
+                        <Coins className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Result display */}
+                  {showResult && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className={`mb-8 text-4xl font-bold ${
+                        showResult === "win" ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
+                      {showResult === "win" ? "TO THE MOON!" : "CRASHED!"}
+                    </motion.div>
+                  )}
+
+                  {/* Enhanced Bet button with more glaring animation */}
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative"
+                  >
+                    {/* Outer glow effect */}
+                    <div
+                      className="absolute inset-0 rounded-full blur-md"
+                      style={{
+                        transform: "scale(1.1)",
+                      }}
+                    />
+
+                    <Button
+                      onClick={placeBet}
+                      disabled={!canBet}
+                      className={`
+                        w-28 h-28 rounded-full text-3xl font-bold shadow-lg transition-all duration-300 relative overflow-hidden z-10
+                        ${canBet ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500' : 'bg-gray-700'}
+                      `}
+                    >
+                      {isSpinning ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: "linear",
+                          }}
+                        >
+                          <RotateCcw className="w-10 h-10" />
+                        </motion.div>
+                      ) : (
+                        "BET"
+                      )}
+
+                      {/* Enhanced pulsing effect */}
+                      {!isSpinning && canBet && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-white"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{
+                            opacity: [0, 0.3, 0],
+                            scale: [0.8, 1.3, 0.8],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      )}
+                    </Button>
+                  </motion.div>
+
+                  <p className="mt-6 text-gray-400 text-center max-w-xs">
+                    Press BET to launch to the moon and double your bet or
+                    crash!
+                  </p>
+
+                  {!connected && (
+                    <div className="mt-6 text-center">
+                      <WalletMultiButton className="bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white py-2 px-4 rounded-md" />
+                      <p className="mt-2 text-blue-300 text-sm">Connect your wallet to play</p>
+                    </div>
+                  )}
+
+                  {/* Withdraw button */}
+                  {connected && stats && stats.pendingWithdrawal && stats.pendingWithdrawal.toNumber() > 0 && (
+                    <Button
+                      onClick={withdrawWinnings}
+                      className="mt-6 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Withdraw {(stats.pendingWithdrawal.toNumber() / LAMPORTS_PER_SOL).toFixed(4)} SOL
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="col-span-1">
+            {/* Stats card */}
+            <Stats
+              walletConnected={connected}
+              setBalance={setBalance}
+              balance={balance}
+              isSpinning={isSpinning}
+              lastResults={lastResults}
+              stats={stats}
+              fetchWalletBalance={fetchWalletBalance}
+            />
+          </div>
+        </div>
+        <Particles />
+      </div>
+
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+}
