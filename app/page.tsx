@@ -401,7 +401,6 @@ export default function CasinoGame() {
               </div>
             </CardContent>
           </Card>
-
           <div className="col-span-1">
             {/* Stats card */}
             <Stats
@@ -410,8 +409,6 @@ export default function CasinoGame() {
               balance={balance}
               isSpinning={isSpinning}
               lastResults={lastResults}
-              stats={stats}
-              fetchWalletBalance={fetchWalletBalance}
             />
           </div>
         </div>
