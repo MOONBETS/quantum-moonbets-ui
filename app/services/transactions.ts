@@ -28,32 +28,12 @@ export class TransactionService {
     this.vrfProgramAddress = vrfProgramAddress;
   }
 
-  async initializePlayer(): Promise<void> {
+  async placeBet(betAmount: BN): Promise<void> {
     try {
-      const tx = await this.program.methods
-        .initialize()
-        .accounts({
-          payer: this.publicKey,
-          player: this.playerPda,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-      return tx;
-    } catch (e) {
-      console.error("Initialization failed:", e);
-      throw new Error("Initialization failed: " + (e as Error).message);
-    }
-  }
-
-  async placeBet(betAmount: string): Promise<void> {
-    try {
-      const parsedAmount = parseFloat(betAmount);
-      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      if (isNaN(betAmount) || betAmount <= 0) {
         throw new Error("Invalid bet amount");
       }
-      const lamports = new BN((parsedAmount * web3.LAMPORTS_PER_SOL).toFixed(0));
 
-      console.log("Bet amount in lamports:", lamports.toString());
       const clientSeed = new BN(42);
 
       // generate random number between 1-6
@@ -65,7 +45,6 @@ export class TransactionService {
       );
 
       const oracleQueueAddress = new PublicKey("Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh");
-      const oldPlayer = await this.program.account.player.fetch(this.playerPda);
 
       // Add event listener
       let listener: number | null = null;
@@ -87,7 +66,7 @@ export class TransactionService {
 
       // Place bet
       await this.program.methods
-        .play(betNumber, lamports, clientSeed)
+        .play(betNumber, betAmount, clientSeed)
         .accounts({
           payer: this.publicKey,
           player: this.playerPda,
@@ -103,6 +82,8 @@ export class TransactionService {
 
       console.log("Bet placed successfully");
 
+      const oldPlayer = await this.program.account.player.fetch(this.playerPda);
+
       await this.waitForResult(oldPlayer, eventPromise, listener);
 
     } catch (e) {
@@ -116,44 +97,43 @@ export class TransactionService {
     eventPromise: Promise<DiceRolledEvent>,
     listener: number | null
   ): Promise<void> {
-    const maxWaitTime = 60000;
-    const start = Date.now();
-    let resultFound = false;
+    try {
+      const pollPromise = new Promise<void>(async (resolve) => {
+        const maxWaitTime = 60000;
+        const start = Date.now();
+        while (Date.now() - start < maxWaitTime) {
+          const player = await this.program.account.player.fetch(this.playerPda);
+          console.log("Checking player stats...", player);
+          if (player.lastResult !== oldPlayer.lastResult && player.currentBet === 0) {
+            console.log("Result found via polling:", player.lastResult);
+            resolve();
+            return;
+          }
+          await new Promise(res => setTimeout(res, 3000)); // Poll faster for better UX
+        }
+      });
 
-    while (Date.now() - start < maxWaitTime) {
-      const player = await this.program.account.player.fetch(this.playerPda);
-      console.log("Checking player stats...", player);
-      if (player.lastResult !== oldPlayer.lastResult && player.currentBet === 0) {
-        console.log("Result found:", player.lastResult);
-        resultFound = true;
-        break;
-      }
-      await new Promise(res => setTimeout(res, 5000));
-    }
-
-    if (!resultFound) {
-      try {
-        const timeoutPromise = new Promise<DiceRolledEvent>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 5000)
-        );
-        const event = await Promise.race([eventPromise, timeoutPromise]);
-        if (event && 'result' in event) {
+      const result = await Promise.race([
+        eventPromise.then((event) => {
           console.log("Event received:", event);
           if (event.won) {
             console.log("You won!");
           } else {
             console.log("You lost.");
           }
-        }
-      } catch (err) {
-        console.error("Event not received:", err);
+        }),
+        pollPromise
+      ]);
+
+    } catch (err) {
+      console.error("Failed to get result:", err);
+    } finally {
+      if (listener) {
+        await this.program.removeEventListener(listener);
       }
     }
-
-    if (listener) {
-      await this.program.removeEventListener(listener);
-    }
   }
+
 
   async withdraw(): Promise<void> {
     try {

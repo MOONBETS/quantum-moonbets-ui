@@ -43,8 +43,8 @@ export default function CasinoGame() {
   const seed = "playerd";
   const COMMITMENT = "confirmed";
 
-  const platformVault = new PublicKey("A6bd4tyLHA7ad1MVHTi28JpqDFjifuoQbaTbznzUe9BD");
-  const platformStats = new PublicKey("7UDEJe6mECcAMVTTRF4YdUDRee6EbvegqsuB7mCKq1vh");
+  const platformVault = new PublicKey("7rvuZ9MUiFAvWHdrU68jKyFKw7r3VBapotEMjTRnFrUa");
+  const platformStats = new PublicKey("APKnYFTTHXD3eFzvpRr1wvFUHc4diChc2NbM21GBCJhi");
   const vrfProgramAddress = new PublicKey("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
 
   // Track wallet connection status
@@ -90,8 +90,7 @@ export default function CasinoGame() {
     );
     setTxService(service);
 
-    // Check if player account exists and initialize if needed
-    // checkPlayerAccount();
+    checkPlayerAccount();
   }, [program, playerPda, publicKey]);
 
   // Fetch wallet SOL balance
@@ -107,16 +106,15 @@ export default function CasinoGame() {
   };
 
   // Check if player account exists
-  // const checkPlayerAccount = async () => {
-  //   if (!program || !playerPda) return;
+  const checkPlayerAccount = async () => {
+    if (!program || !playerPda) return;
     
-  //   try {
-  //     await getStats();
-  //   } catch (e) {
-  //     console.log("Player account doesn't exist, needs initialization");
-  //     await initializePlayer();
-  //   }
-  // };
+    try {
+      await getStats();
+    } catch (e) {
+      console.log("Player account doesn't exist, needs initialization:", e);
+    }
+  };
 
   // Get player stats from the program
   const getStats = async () => {
@@ -160,24 +158,6 @@ export default function CasinoGame() {
     }
   };
 
-  // Initialize player account
-  const initializePlayer = async () => {
-    if (!txService) return;
-    
-    try {
-      setErrorMessage("Initializing player account...");
-      await txService.initializePlayer();
-      const playerStats = await getStats();
-      setErrorMessage("Player account initialized successfully!");
-      setTimeout(() => setErrorMessage(""), 3000);
-      return playerStats;
-    } catch (e) {
-      console.error("Failed to initialize player:", e);
-      setErrorMessage("Failed to initialize player: " + (e as Error).message);
-      throw e;
-    }
-  };
-
   // Place a bet
   const placeBet = async () => {
     if (!txService || !publicKey) return;
@@ -188,9 +168,11 @@ export default function CasinoGame() {
       
       // Convert bet amount to lamports (SOL's smallest unit)
       const betLamports = new BN(betAmount * LAMPORTS_PER_SOL);
+
+      console.log("Player Pda:", playerPda?.toBase58().toString());
       
       // Place the bet transaction
-      const betResult = await txService.placeBet(betLamports.toString());
+      const betResult = await txService.placeBet(betLamports);
       
       // Refresh player stats
       const updatedStats = await getStats();
