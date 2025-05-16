@@ -47,20 +47,20 @@ export class TransactionService {
       const oracleQueueAddress = new PublicKey("Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh");
 
       // Add event listener
-      let listener: number | null = null;
-      const eventPromise = new Promise<DiceRolledEvent>((resolve) => {
-        listener = this.program.addEventListener("DiceRolled", (event: DiceRolledEvent) => {
-          if (event.player.equals(this.playerPda)) {
-            console.log("DiceRolled event:", {
-              player: event.player.toBase58(),
-              result: event.result,
-              won: event.won,
-              payout: event.payout.toString()
-            });
-            resolve(event);
-          }
-        });
-      });
+      // let listener: number | null = null;
+      // const eventPromise = new Promise<DiceRolledEvent>((resolve) => {
+      //   listener = this.program.addEventListener("DiceRolled", (event: DiceRolledEvent) => {
+      //     if (event.player.equals(this.playerPda)) {
+      //       console.log("DiceRolled event:", {
+      //         player: event.player.toBase58(),
+      //         result: event.result,
+      //         won: event.won,
+      //         payout: event.payout.toString()
+      //       });
+      //       resolve(event);
+      //     }
+      //   });
+      // });
 
       console.log("Placing bet...");
 
@@ -82,9 +82,9 @@ export class TransactionService {
 
       console.log("Bet placed successfully");
 
-      const oldPlayer = await this.program.account.player.fetch(this.playerPda);
+      // const oldPlayer = await this.program.account.player.fetch(this.playerPda);
 
-      await this.waitForResult(oldPlayer, eventPromise, listener);
+      // await this.waitForResult(oldPlayer, eventPromise, listener);
 
     } catch (e) {
       console.error("Bet failed:", e);
@@ -148,6 +148,23 @@ export class TransactionService {
       console.log("Withdrawal successful");
     } catch (e) {
       console.error("Withdrawal failed:", e);
+    }
+  }
+
+  // initializePlatform
+  async initializePlatform(): Promise<void> {
+    try {
+      await this.program.methods
+        .initializePlatform()
+        .accounts({
+          payer: this.publicKey,
+          platformVault: this.platformVault,
+          platformStats: this.platformStats,
+        })
+        .rpc();
+      console.log("Platform initialized successfully");
+    } catch (e) {
+      console.error("Platform initialization failed:", e);
     }
   }
 }
