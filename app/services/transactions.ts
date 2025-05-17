@@ -3,6 +3,7 @@ import { MoonbetsProgram } from "../types/program";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { BN, web3 } from "@coral-xyz/anchor";
 import { DiceRolledEvent } from "../types/events";
+import { PlatformStats } from "../types/accounts";
 
 export class TransactionService {
   private program: MoonbetsProgram;
@@ -168,6 +169,29 @@ export class TransactionService {
     }
   }
 
+  async loadPlatformStats(): Promise<PlatformStats[]> {
+    const accounts = await this.program.account.platformStats.all();
+    return accounts.map((a) => a.account);
+  }
 
+  async getPlatformBalance(pubkey: PublicKey): Promise<number> {
+    const lamports = await this.program.provider.connection.getBalance(pubkey);
+    return lamports / web3.LAMPORTS_PER_SOL;
+  }
+
+  async adminDeposit(amount: BN): Promise<void> {
+    await this.program.methods.adminDeposit(amount).accounts({
+      admin: this.publicKey,
+      platformVault: this.platformVault,
+    }).rpc();
+  }
+
+  async adminWithdraw(amount: BN): Promise<void> {
+    await this.program.methods.adminWithdraw(amount).accounts({
+      admin: this.publicKey,
+      platformVault: this.platformVault,
+      platformStats: this.platformStats,
+    }).rpc();
+  }
 
 }
