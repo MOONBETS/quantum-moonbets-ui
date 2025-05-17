@@ -18,12 +18,17 @@ export default function AdminPage() {
   const { publicKey, signTransaction, signAllTransactions } = useWallet();
 
   const [program, setProgram] = useState<MoonbetsProgram | null>(null);
-  const [transactionService, setTransactionService] = useState<TransactionService | null>(null);
-  const [platformStatsList, setPlatformStatsList] = useState<PlatformStats[]>([]);
+  const [transactionService, setTransactionService] =
+    useState<TransactionService | null>(null);
+  const [platformStatsList, setPlatformStatsList] = useState<PlatformStats[]>(
+    []
+  );
   const [depositAmount, setDepositAmount] = useState("1");
   const [withdrawAmount, setWithdrawAmount] = useState("1");
   const [platformBalance, setPlatformBalance] = useState<number>(0);
-  const [platformVault, setPlatformVault] = useState<web3.PublicKey | null>(null);
+  const [platformVault, setPlatformVault] = useState<web3.PublicKey | null>(
+    null
+  );
 
   useEffect(() => {
     if (!publicKey) return;
@@ -44,11 +49,13 @@ export default function AdminPage() {
           toast("No stats found. Admin must initialize.");
         } else {
           setPlatformStatsList(stats.map((a) => a.account));
-          
+
           // Use the platform vault public key from the account data
-          const vaultPubkey = new web3.PublicKey("7rvuZ9MUiFAvWHdrU68jKyFKw7r3VBapotEMjTRnFrUa");
+          const vaultPubkey = new web3.PublicKey(
+            "7rvuZ9MUiFAvWHdrU68jKyFKw7r3VBapotEMjTRnFrUa"
+          );
           setPlatformVault(vaultPubkey);
-          
+
           const txService = new TransactionService(
             prog,
             web3.PublicKey.default, // Not used in admin context
@@ -91,7 +98,7 @@ export default function AdminPage() {
         .initializePlatform()
         .accounts({
           admin: publicKey,
-          platformStats: platformStatsKeypair.publicKey
+          platformStats: platformStatsKeypair.publicKey,
         })
         .signers([platformStatsKeypair])
         .rpc();
@@ -109,14 +116,14 @@ export default function AdminPage() {
       toast.error("Transaction service not initialized");
       return;
     }
-    
+
     try {
       const amount = Number(depositAmount);
       if (isNaN(amount) || amount <= 0) {
         toast.error("Please enter a valid deposit amount");
         return;
       }
-      
+
       const lamports = new BN(amount * LAMPORTS_PER_SOL);
       await transactionService.adminDeposit(lamports);
       toast.success("Deposit successful");
@@ -132,14 +139,14 @@ export default function AdminPage() {
       toast.error("Transaction service not initialized");
       return;
     }
-    
+
     try {
       const amount = Number(withdrawAmount);
       if (isNaN(amount) || amount <= 0) {
         toast.error("Please enter a valid withdrawal amount");
         return;
       }
-      
+
       const lamports = new BN(amount * LAMPORTS_PER_SOL);
       await transactionService.adminWithdraw(lamports);
       toast.success("Withdrawal successful");
@@ -154,7 +161,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] to-[#1a1a3a] text-white overflow-hidden relative flex flex-col">
       <MoonBackground />
 
-      <div className="mt-20 space-y-8 max-w-2xl mx-auto p-4">
+      <div className="mt-20 space-y-8 max-w-2xl mx-auto p-4 z-10">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Admin Panel 🛠️</h1>
           <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700 !text-white" />
@@ -162,7 +169,9 @@ export default function AdminPage() {
 
         {platformStatsList.length === 0 ? (
           <div className="bg-[#121232] p-4 rounded-lg">
-            <h2 className="text-lg font-semibold mb-2">Platform Not Initialized</h2>
+            <h2 className="text-lg font-semibold mb-2">
+              Platform Not Initialized
+            </h2>
             <button
               onClick={initializePlatform}
               className="bg-blue-600 px-4 py-2 text-white rounded hover:bg-blue-700"
@@ -177,14 +186,20 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-400">Platform Balance</p>
-                  <p className="font-medium">{platformBalance.toFixed(4)} SOL</p>
+                  <p className="font-medium">
+                    {platformBalance.toFixed(4)} SOL
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-400">Withdrawn Today</p>
                   <p className="font-medium">
-                    {platformStatsList[0]?.withdrawnToday 
-                      ? (platformStatsList[0].withdrawnToday.toNumber() / LAMPORTS_PER_SOL).toFixed(4) 
-                      : "0.0000"} SOL
+                    {platformStatsList[0]?.withdrawnToday
+                      ? (
+                          platformStatsList[0].withdrawnToday.toNumber() /
+                          LAMPORTS_PER_SOL
+                        ).toFixed(4)
+                      : "0.0000"}{" "}
+                    SOL
                   </p>
                 </div>
               </div>
