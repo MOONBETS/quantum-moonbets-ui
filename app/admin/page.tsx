@@ -60,9 +60,7 @@ export default function AdminPage() {
             prog,
             web3.PublicKey.default, // Not used in admin context
             publicKey,
-            vaultPubkey,
             stats[0].publicKey,
-            web3.PublicKey.default // Not used for admin
           );
           setTransactionService(txService);
 
