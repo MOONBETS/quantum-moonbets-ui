@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/moonbets.json`.
  */
 export type Moonbets = {
-    "address": "75fuoHrdGCZwtX5GFkKvd6gZf6mFqyEQ2CknVUN1ak1W",
+    "address": "DmQntFUJqjBYk1VTHL8ZuBb5fRa2znTbKTJoimsDswSa",
     "metadata": {
         "name": "moonbets",
         "version": "0.1.0",
@@ -13,6 +13,60 @@ export type Moonbets = {
         "description": "Created with Anchor"
     },
     "instructions": [
+        {
+            "name": "addAdmin",
+            "discriminator": [
+                177,
+                236,
+                33,
+                205,
+                124,
+                152,
+                55,
+                186
+            ],
+            "accounts": [
+                {
+                    "name": "primaryAdmin",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "platformStats",
+                    "writable": true
+                },
+                {
+                    "name": "admin",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    97,
+                                    100,
+                                    109,
+                                    105,
+                                    110
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "newAdmin"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "newAdmin"
+                },
+                {
+                    "name": "systemProgram",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": []
+        },
         {
             "name": "adminDeposit",
             "discriminator": [
@@ -33,7 +87,34 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformVault",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    118,
+                                    97,
+                                    117,
+                                    108,
+                                    116
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "systemProgram",
+                    "address": "11111111111111111111111111111111"
                 }
             ],
             "args": [
@@ -63,11 +144,38 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformVault",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    118,
+                                    97,
+                                    117,
+                                    108,
+                                    116
+                                ]
+                            }
+                        ]
+                    }
                 },
                 {
                     "name": "platformStats",
                     "writable": true
+                },
+                {
+                    "name": "adminAccount",
+                    "optional": true
                 }
             ],
             "args": [
@@ -140,6 +248,104 @@ export type Moonbets = {
                     "signer": true
                 },
                 {
+                    "name": "platformVault",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    118,
+                                    97,
+                                    117,
+                                    108,
+                                    116
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "adminAccount",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    97,
+                                    100,
+                                    109,
+                                    105,
+                                    110
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "admin"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "systemProgram",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "initializePlayer",
+            "discriminator": [
+                79,
+                249,
+                88,
+                177,
+                220,
+                62,
+                56,
+                128
+            ],
+            "accounts": [
+                {
+                    "name": "payer",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "player",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    121,
+                                    101,
+                                    114,
+                                    100
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "payer"
+                            }
+                        ]
+                    }
+                },
+                {
                     "name": "systemProgram",
                     "address": "11111111111111111111111111111111"
                 }
@@ -190,7 +396,30 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformVault",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    118,
+                                    97,
+                                    117,
+                                    108,
+                                    116
+                                ]
+                            }
+                        ]
+                    }
                 },
                 {
                     "name": "platformStats",
@@ -249,6 +478,35 @@ export type Moonbets = {
             ]
         },
         {
+            "name": "removeAdmin",
+            "discriminator": [
+                74,
+                202,
+                71,
+                106,
+                252,
+                31,
+                72,
+                183
+            ],
+            "accounts": [
+                {
+                    "name": "primaryAdmin",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "platformStats",
+                    "writable": true
+                },
+                {
+                    "name": "admin",
+                    "writable": true
+                }
+            ],
+            "args": []
+        },
+        {
             "name": "withdraw",
             "discriminator": [
                 183,
@@ -292,13 +550,49 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformVault",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    118,
+                                    97,
+                                    117,
+                                    108,
+                                    116
+                                ]
+                            }
+                        ]
+                    }
                 }
             ],
             "args": []
         }
     ],
     "accounts": [
+        {
+            "name": "admin",
+            "discriminator": [
+                244,
+                158,
+                220,
+                65,
+                8,
+                73,
+                4,
+                65
+            ]
+        },
         {
             "name": "platformStats",
             "discriminator": [
@@ -327,6 +621,45 @@ export type Moonbets = {
         }
     ],
     "events": [
+        {
+            "name": "adminAdded",
+            "discriminator": [
+                23,
+                13,
+                37,
+                90,
+                130,
+                53,
+                75,
+                251
+            ]
+        },
+        {
+            "name": "adminRemoved",
+            "discriminator": [
+                59,
+                133,
+                36,
+                27,
+                156,
+                79,
+                75,
+                146
+            ]
+        },
+        {
+            "name": "adminWithdrawal",
+            "discriminator": [
+                252,
+                57,
+                105,
+                143,
+                6,
+                137,
+                231,
+                33
+            ]
+        },
         {
             "name": "diceRolled",
             "discriminator": [
@@ -371,9 +704,83 @@ export type Moonbets = {
             "code": 6005,
             "name": "unauthorized",
             "msg": "unauthorized"
+        },
+        {
+            "code": 6006,
+            "name": "maxAdminsReached",
+            "msg": "Maximum number of admins reached"
+        },
+        {
+            "code": 6007,
+            "name": "cannotRemovePrimaryAdmin",
+            "msg": "Cannot remove primary admin"
         }
     ],
     "types": [
+        {
+            "name": "admin",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "pubkey",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "isActive",
+                        "type": "bool"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "adminAdded",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "admin",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "addedBy",
+                        "type": "pubkey"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "adminRemoved",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "admin",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "removedBy",
+                        "type": "pubkey"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "adminWithdrawal",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "admin",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "amount",
+                        "type": "u64"
+                    }
+                ]
+            }
+        },
         {
             "name": "diceRolled",
             "type": {
@@ -416,8 +823,12 @@ export type Moonbets = {
                         "type": "u64"
                     },
                     {
-                        "name": "admin",
+                        "name": "primaryAdmin",
                         "type": "pubkey"
+                    },
+                    {
+                        "name": "adminCount",
+                        "type": "u8"
                     }
                 ]
             }

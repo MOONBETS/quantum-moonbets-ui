@@ -1,10 +1,12 @@
 import { BN, web3 } from "@coral-xyz/anchor";
 
 export interface PlatformStats {
+  isInitialized: boolean;
   lastReset: BN;
   withdrawnToday: BN;
-  admin: web3.PublicKey;
-}
+  primaryAdmin: web3.PublicKey;
+  adminCount: number;
+};
 
 export interface Player {
   lastResult: number;
@@ -14,4 +16,9 @@ export interface Player {
   wins: number;
   losses: number;
   totalGames: number;
+}
+
+export interface Admin {
+  pubkey: web3.PublicKey;
+  isActive: boolean;
 }

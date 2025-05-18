@@ -43,9 +43,7 @@ export default function CasinoGame() {
   const seed = "playerd";
   const COMMITMENT = "confirmed";
 
-  const platformVault = new PublicKey("7rvuZ9MUiFAvWHdrU68jKyFKw7r3VBapotEMjTRnFrUa");
-  const platformStats = new PublicKey("APKnYFTTHXD3eFzvpRr1wvFUHc4diChc2NbM21GBCJhi");
-  const vrfProgramAddress = new PublicKey("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
+  const platformStats = new PublicKey("9coXMb4NdHqvqgyLxiKU1PFjVYWqhVvFh54uaFZaiF7x");
 
   // Track wallet connection status
   useEffect(() => {
@@ -84,9 +82,7 @@ export default function CasinoGame() {
       program,
       playerPda,
       publicKey,
-      platformVault,
       platformStats,
-      vrfProgramAddress
     );
     setTxService(service);
 
@@ -113,6 +109,7 @@ export default function CasinoGame() {
       await getStats();
     } catch (e) {
       console.log("Player account doesn't exist, needs initialization:", e);
+      await txService?.initializePlayer()
     }
   };
 
