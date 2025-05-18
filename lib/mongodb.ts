@@ -1,7 +1,9 @@
 // lib/mongodb.ts
 import mongoose from 'mongoose';
+import dotev from "dotenv";
+dotev.config();
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+const MONGODB_URI = process.env.NEXT_MONGODB_URI as string;
 
 if (!MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable.');
