@@ -221,15 +221,42 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddAdmin = async () => {
-    if (!txService || !adminPubkeyInput) return;
-
+  const handleAddAdmin = async (
+  ) => {
     try {
-      const newAdmin = new web3.PublicKey(adminPubkeyInput);
-      await txService.addAdmin(newAdmin);
-      toast.success("Admin added successfully");
-      const stats = await txService?.loadPlatformStats();
-      setPlatformStatsList(stats ?? [])
+      if (!publicKey || !signTransaction || !adminPubkeyInput) {
+        throw new Error("Wallet not connected or can't sign");
+      }
+
+      const res = await fetch("/api/platform/addAdmin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          primaryAdmin: publicKey.toBase58(),
+          newAdmin: adminPubkeyInput,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Add admin request failed");
+      }
+
+      const serializedTx = Buffer.from(data.transaction, "base64");
+      const tx = Transaction.from(serializedTx);
+
+      const signedTx = await signTransaction(tx);
+      const txid = await connection.sendRawTransaction(signedTx.serialize());
+
+      await connection.confirmTransaction(txid, "confirmed");
+
+      console.log("Admin added with txid:", txid);
+      // return {
+      //   txid,
+      //   adminPda: data.adminPda,
+      //   platformStats: data.platformStats,
+      // };
     } catch (e) {
       console.error("Failed to add admin:", e);
       toast.error("Failed to add admin: " + (e as Error).message);

@@ -92,13 +92,6 @@ export default function CasinoGame() {
   // Set up transaction service
   useEffect(() => {
     if (!program || !playerPda || !publicKey) return;
-    
-    const service = new TransactionService(
-      program,
-      playerPda,
-      publicKey
-    );
-    setTxService(service);
 
     checkPlayerAccount();
   }, [program, playerPda, publicKey]);
