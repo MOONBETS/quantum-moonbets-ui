@@ -18,17 +18,14 @@ export default function AdminPage() {
   const { publicKey, signTransaction, signAllTransactions } = useWallet();
 
   const [program, setProgram] = useState<MoonbetsProgram | null>(null);
-  const [transactionService, setTransactionService] =
+  const [txService, settxService] =
     useState<TransactionService | null>(null);
-  const [platformStatsList, setPlatformStatsList] = useState<PlatformStats[]>(
-    []
-  );
+  const [platformStatsList, setPlatformStatsList] = useState<PlatformStats[]>([]);
   const [depositAmount, setDepositAmount] = useState("1");
   const [withdrawAmount, setWithdrawAmount] = useState("1");
   const [platformBalance, setPlatformBalance] = useState<number>(0);
-  const [platformVault, setPlatformVault] = useState<web3.PublicKey | null>(
-    null
-  );
+  const [platformVault, setPlatformVault] = useState<web3.PublicKey | null>(null);
+  const [adminPubkeyInput, setAdminPubkeyInput] = useState("");
 
   useEffect(() => {
     if (!publicKey) return;
@@ -50,21 +47,22 @@ export default function AdminPage() {
         } else {
           setPlatformStatsList(stats.map((a) => a.account));
 
-          // Use the platform vault public key from the account data
-          const vaultPubkey = new web3.PublicKey(
-            "7rvuZ9MUiFAvWHdrU68jKyFKw7r3VBapotEMjTRnFrUa"
-          );
-          setPlatformVault(vaultPubkey);
+          const [vaultPda, vaultBump] = web3.PublicKey.findProgramAddressSync(
+                [Buffer.from("platform_vault")],
+                prog.programId
+              );
 
-          const txService = new TransactionService(
+          setPlatformVault(vaultPda);
+
+          const trxService = new TransactionService(
             prog,
-            web3.PublicKey.default, // Not used in admin context
+            web3.PublicKey.default,
             publicKey,
-            stats[0].publicKey,
+            stats[0].publicKey
           );
-          setTransactionService(txService);
+          settxService(trxService);
 
-          const balance = await connection.getBalance(vaultPubkey);
+          const balance = await connection.getBalance(vaultPda);
           setPlatformBalance(balance / LAMPORTS_PER_SOL);
         }
       } catch (error) {
@@ -74,35 +72,12 @@ export default function AdminPage() {
     })();
   }, [connection, publicKey]);
 
-  const loadAllPlatformStats = async (prog: MoonbetsProgram) => {
-    try {
-      const accounts = await prog.account.platformStats.all();
-      setPlatformStatsList(accounts.map((a) => a.account));
-
-      if (accounts.length > 0 && platformVault) {
-        const balance = await connection.getBalance(platformVault);
-        setPlatformBalance(balance / LAMPORTS_PER_SOL);
-      }
-    } catch (e) {
-      console.error("Failed to load platform stats:", e);
-    }
-  };
-
   const initializePlatform = async () => {
     if (!program || !publicKey) return;
     try {
-      const platformStatsKeypair = web3.Keypair.generate();
-      await program.methods
-        .initializePlatform()
-        .accounts({
-          admin: publicKey,
-          platformStats: platformStatsKeypair.publicKey,
-        })
-        .signers([platformStatsKeypair])
-        .rpc();
-
-      toast.success("Platform initialized successfully");
-      await loadAllPlatformStats(program);
+      await txService?.initializePlatform(web3.Keypair.generate())
+      const stats = await txService?.loadPlatformStats();
+      setPlatformStatsList(stats ?? [])
     } catch (e) {
       console.error("Failed to initialize platform:", e);
       toast.error("Failed to initialize platform: " + (e as Error).message);
@@ -110,7 +85,7 @@ export default function AdminPage() {
   };
 
   const handleDeposit = async () => {
-    if (!transactionService || !program) {
+    if (!txService || !program) {
       toast.error("Transaction service not initialized");
       return;
     }
@@ -123,9 +98,10 @@ export default function AdminPage() {
       }
 
       const lamports = new BN(amount * LAMPORTS_PER_SOL);
-      await transactionService.adminDeposit(lamports);
+      await txService.adminDeposit(lamports);
       toast.success("Deposit successful");
-      await loadAllPlatformStats(program);
+      const stats = await txService?.loadPlatformStats();
+      setPlatformStatsList(stats ?? []);
     } catch (e) {
       console.error("Deposit failed:", e);
       toast.error("Deposit failed: " + (e as Error).message);
@@ -133,7 +109,7 @@ export default function AdminPage() {
   };
 
   const handleWithdraw = async () => {
-    if (!transactionService || !program) {
+    if (!txService || !program) {
       toast.error("Transaction service not initialized");
       return;
     }
@@ -146,12 +122,43 @@ export default function AdminPage() {
       }
 
       const lamports = new BN(amount * LAMPORTS_PER_SOL);
-      await transactionService.adminWithdraw(lamports);
+      await txService.adminWithdraw(lamports);
       toast.success("Withdrawal successful");
-      await loadAllPlatformStats(program);
+      const stats = await txService?.loadPlatformStats();
+      setPlatformStatsList(stats ?? [])
     } catch (e) {
       console.error("Withdrawal failed:", e);
       toast.error("Withdrawal failed: " + (e as Error).message);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!txService || !adminPubkeyInput) return;
+
+    try {
+      const newAdmin = new web3.PublicKey(adminPubkeyInput);
+      await txService.addAdmin(newAdmin);
+      toast.success("Admin added successfully");
+      const stats = await txService?.loadPlatformStats();
+      setPlatformStatsList(stats ?? [])
+    } catch (e) {
+      console.error("Failed to add admin:", e);
+      toast.error("Failed to add admin: " + (e as Error).message);
+    }
+  };
+
+  const handleRemoveAdmin = async () => {
+    if (!txService || !adminPubkeyInput) return;
+
+    try {
+      const adminToRemove = new web3.PublicKey(adminPubkeyInput);
+      await txService.removeAdmin(adminToRemove);
+      toast.success("Admin removed successfully");
+      const stats = await txService?.loadPlatformStats();
+      setPlatformStatsList(stats ?? [])
+    } catch (e) {
+      console.error("Failed to remove admin:", e);
+      toast.error("Failed to remove admin: " + (e as Error).message);
     }
   };
 
@@ -159,7 +166,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] to-[#1a1a3a] text-white overflow-hidden relative flex flex-col">
       <MoonBackground />
 
-      <div className="mt-20 space-y-8 max-w-2xl mx-auto p-4 z-10">
+      <div className="mt-20 space-y-8 max-w-3xl mx-auto p-4 z-10">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Admin Panel 🛠️</h1>
           <WalletMultiButton className="!bg-blue-600 hover:!bg-blue-700 !text-white" />
@@ -208,17 +215,13 @@ export default function AdminPage() {
                 <h3 className="font-semibold mb-2">Deposit</h3>
                 <input
                   type="text"
-                  pattern="[0-9]*\.?[0-9]*"
-                  min="0.001"
-                  step="0.001"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
                   className="bg-[#1a1a3a] border border-blue-800 px-2 py-1 rounded w-full text-white"
                 />
                 <button
                   onClick={handleDeposit}
-                  disabled={!transactionService}
-                  className="bg-green-600 px-4 py-2 text-white rounded w-full hover:bg-green-700 mt-2 disabled:bg-green-800 disabled:opacity-50"
+                  className="bg-green-600 px-4 py-2 text-white rounded w-full hover:bg-green-700 mt-2"
                 >
                   Deposit SOL
                 </button>
@@ -228,22 +231,56 @@ export default function AdminPage() {
                 <h3 className="font-semibold mb-2">Withdraw</h3>
                 <input
                   type="text"
-                  pattern="[0-9]*\.?[0-9]*"
-                  min="0.001"
-                  step="0.001"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
                   className="bg-[#1a1a3a] border border-red-800 px-2 py-1 rounded w-full text-white"
                 />
                 <button
                   onClick={handleWithdraw}
-                  disabled={!transactionService}
-                  className="bg-red-600 px-4 py-2 text-white rounded w-full hover:bg-red-700 mt-2 disabled:bg-red-800 disabled:opacity-50"
+                  className="bg-red-600 px-4 py-2 text-white rounded w-full hover:bg-red-700 mt-2"
                 >
                   Withdraw SOL
                 </button>
               </div>
             </div>
+
+            <div className="bg-[#121232] p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Manage Admins</h3>
+              <input
+                type="text"
+                placeholder="Enter admin public key"
+                value={adminPubkeyInput}
+                onChange={(e) => setAdminPubkeyInput(e.target.value)}
+                className="bg-[#1a1a3a] border border-gray-700 px-2 py-1 rounded w-full text-white mb-2"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddAdmin}
+                  className="bg-purple-600 px-4 py-2 text-white rounded hover:bg-purple-700 w-full"
+                >
+                  Add Admin
+                </button>
+                <button
+                  onClick={handleRemoveAdmin}
+                  className="bg-yellow-600 px-4 py-2 text-white rounded hover:bg-yellow-700 w-full"
+                >
+                  Remove Admin
+                </button>
+              </div>
+            </div>
+
+            {/* <div className="bg-[#121232] p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Current Admins</h3>
+              {platformStatsList[0]?.adminCount ? (
+                <ul className="list-disc ml-6 space-y-1 text-sm text-gray-300">
+                  {platformStatsList[0]..map((admin, i) => (
+                    <li key={i}>{admin.toBase58()}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No admins listed.</p>
+              )}
+            </div> */}
           </div>
         )}
       </div>

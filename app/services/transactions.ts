@@ -1,9 +1,10 @@
 // services/transaction.ts
 import { MoonbetsProgram } from "../types/program";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { BN, web3 } from "@coral-xyz/anchor";
 import { DiceRolledEvent } from "../types/events";
 import { PlatformStats, Player, Admin } from "../types/accounts";
+import { Wallet, WalletContextState } from "@solana/wallet-adapter-react";
 
 export class TransactionService {
   private program: MoonbetsProgram;
@@ -16,17 +17,21 @@ export class TransactionService {
   private programIdentityPubkey: PublicKey;
   private identityBump: number;
   private oracleQueue: PublicKey;
+  private connection: Connection;
+  private wallet: any;
 
   constructor(
     program: MoonbetsProgram,
     playerPda: PublicKey,
     publicKey: PublicKey,
-    platformStats: PublicKey,
+    platformStats: PublicKey
   ) {
     this.program = program;
     this.playerPda = playerPda;
     this.publicKey = publicKey;
     this.platformStats = platformStats;
+    this.connection = program.provider.connection;
+    this.wallet = program.provider.wallet;
 
     // Find vault bump
     const [vaultPda, vaultBump] = web3.PublicKey.findProgramAddressSync(
@@ -139,9 +144,51 @@ export class TransactionService {
    * Add a new admin to the platform
    * @param newAdminPublicKey The public key of the new admin to add
    */
+  // async addAdmin(newAdminPublicKey: PublicKey): Promise<void> {
+  //   try {
+  //     // Get admin PDA for the new admin
+  //     const [adminPda] = web3.PublicKey.findProgramAddressSync(
+  //       [Buffer.from("admin"), newAdminPublicKey.toBuffer()],
+  //       this.program.programId
+  //     );
+
+  //     console.log("Adding admin:", newAdminPublicKey.toBase58());
+  //     console.log("Admin PDA:", adminPda.toBase58());
+
+  //     await this.program.methods
+  //       .addAdmin()
+  //       .accountsStrict({
+  //         primaryAdmin: this.publicKey,
+  //         platformStats: this.platformStats,
+  //         admin: adminPda,
+  //         newAdmin: newAdminPublicKey,
+  //         systemProgram: SystemProgram.programId,
+  //       })
+  //       .rpc({ commitment: "confirmed" });
+
+  //     console.log("Admin added successfully");
+
+  //     // Wait for confirmation
+  //     await new Promise(resolve => setTimeout(resolve, 2000));
+
+  //     // Fetch and verify admin account
+  //     const admin = await this.program.account.admin.fetch(adminPda);
+  //     console.log("Admin account:", {
+  //       pubkey: admin.pubkey.toString(),
+  //       isActive: admin.isActive
+  //     });
+
+  //     // Verify admin count increased
+  //     const platformStats = await this.program.account.platformStats.fetch(this.platformStats);
+  //     console.log("Platform admin count:", platformStats.adminCount);
+  //   } catch (e) {
+  //     console.error("Adding admin failed:", e);
+  //     throw new Error("Adding admin failed: " + (e as Error).message);
+  //   }
+  // }
+
   async addAdmin(newAdminPublicKey: PublicKey): Promise<void> {
     try {
-      // Get admin PDA for the new admin
       const [adminPda] = web3.PublicKey.findProgramAddressSync(
         [Buffer.from("admin"), newAdminPublicKey.toBuffer()],
         this.program.programId
@@ -150,7 +197,11 @@ export class TransactionService {
       console.log("Adding admin:", newAdminPublicKey.toBase58());
       console.log("Admin PDA:", adminPda.toBase58());
 
-      await this.program.methods
+      // Step 1: Get a fresh blockhash
+      const { blockhash } = await this.connection.getLatestBlockhash();
+
+      // Step 2: Build transaction manually
+      const tx = await this.program.methods
         .addAdmin()
         .accountsStrict({
           primaryAdmin: this.publicKey,
@@ -159,11 +210,20 @@ export class TransactionService {
           newAdmin: newAdminPublicKey,
           systemProgram: SystemProgram.programId,
         })
-        .rpc();
+        .transaction();
 
-      console.log("Admin added successfully");
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = this.publicKey;
 
-      // Wait for confirmation
+      // Step 3: Sign and send
+      const signedTx = await this.wallet?.signTransaction(tx); // or use your wallet adapter
+      const txid = await this.connection.sendRawTransaction(signedTx.serialize());
+
+      // Optional: Wait for confirmation
+      // await this.connection.confirmTransaction(txid, "confirmed");
+      console.log("Admin added successfully:", txid);
+
+      // Wait for confirmation delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Fetch and verify admin account
@@ -173,14 +233,15 @@ export class TransactionService {
         isActive: admin.isActive
       });
 
-      // Verify admin count increased
       const platformStats = await this.program.account.platformStats.fetch(this.platformStats);
       console.log("Platform admin count:", platformStats.adminCount);
+
     } catch (e) {
       console.error("Adding admin failed:", e);
       throw new Error("Adding admin failed: " + (e as Error).message);
     }
   }
+
 
   /**
    * Remove an admin from the platform
@@ -201,7 +262,7 @@ export class TransactionService {
           platformStats: this.platformStats,
           admin: adminPda,
         })
-        .rpc();
+        .rpc({ commitment: "confirmed" });
 
       console.log("Admin removed successfully");
 
@@ -242,7 +303,7 @@ export class TransactionService {
           platformVault: this.platformVault,
           systemProgram: SystemProgram.programId,
         })
-        .rpc();
+        .rpc({ commitment: "confirmed" });
 
       console.log("Admin deposit successful");
 
@@ -284,7 +345,7 @@ export class TransactionService {
           adminAccount: adminPda, // Required for non-primary admin
           // systemProgram: SystemProgram.programId,
         })
-        .rpc();
+        .rpc({ commitment: "confirmed" });
 
       console.log("Admin withdrawal successful");
 
@@ -362,7 +423,7 @@ export class TransactionService {
           vrfProgram: this.vrfProgramAddress,
           systemProgram: SystemProgram.programId,
         })
-        .rpc();
+        .rpc({ commitment: "confirmed" });
 
       console.log("Bet placed successfully");
     } catch (e) {
