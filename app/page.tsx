@@ -35,11 +35,9 @@ export default function CasinoGame() {
   const [program, setProgram] = useState<MoonbetsProgram | null>(null);
   const [playerPda, setPlayerPda] = useState<PublicKey | null>(null);
   const [stats, setStats] = useState<Player | null>(null);
-  const [txService, setTxService] = useState<TransactionService | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const programID = new web3.PublicKey(idl.address);
-  const seed = "playerd";
   const COMMITMENT = "confirmed";
 
   const getBalance = async (wallet: string) => {
@@ -61,7 +59,7 @@ export default function CasinoGame() {
       throw new Error(data.error || "Failed to fetch player account");
     }
 
-    return data as Player; // Contains playerPda and playerAccount
+    return data.playerAccount as Player; // Contains playerPda and playerAccount
   };
 
 
@@ -128,7 +126,7 @@ export default function CasinoGame() {
       const account = await getPlayerAccount(playerPda.toBase58());
 
       setStats(account);
-      console.log("Player stats:", account);
+      // console.log("Player stats:", account);
       
       /// Generate last results based on wins and losses count
       if (account.wins !== undefined && account.losses !== undefined) {
@@ -283,7 +281,7 @@ export default function CasinoGame() {
                     listener = null;
                 }
                 reject(new Error("Timed out waiting for DiceRolled event"));
-            }, 30000);
+            }, 70000);
         });
 
         console.log("Deserializing and signing transaction...");
@@ -316,13 +314,13 @@ export default function CasinoGame() {
             }, 500);
         }
 
-        if (eventResult.won) {
-            toast.success(`You won! Dice rolled: ${eventResult.result}, Payout: ${eventResult.payout.toNumber() / LAMPORTS_PER_SOL} SOL`);
-        } else {
-            toast.error(`You lost! Dice rolled: ${eventResult.result}`);
-        }
+        // if (eventResult.won) {
+        //     toast.success(`You won! Dice rolled: ${eventResult.result}, Payout: ${eventResult.payout.toNumber() / LAMPORTS_PER_SOL} SOL`);
+        // } else {
+        //     toast.error(`You lost! Dice rolled: ${eventResult.result}`);
+        // }
 
-        await getStats?.();
+        await getStats();
         await fetchWalletBalance?.();
 
         return eventResult;

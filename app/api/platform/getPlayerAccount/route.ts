@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         let playerPda;
         try {
             [playerPda] = PublicKey.findProgramAddressSync(
-                [Buffer.from("player"), userPubkey.toBuffer()], // or "playerd" if that’s your actual seed
+                [Buffer.from("playerd"), userPubkey.toBuffer()], // or "playerd" if that’s your actual seed
                 program.programId
             );
             console.log("Player PDA derived:", playerPda.toBase58());

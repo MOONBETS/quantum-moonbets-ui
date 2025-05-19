@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
             tx.feePayer = userPubkey;
 
             latestBlockhash = await program.provider.connection.getLatestBlockhash();
-            console.log("Latest blockhash fetched:", latestBlockhash.blockhash);
+            // console.log("Latest blockhash fetched:", latestBlockhash.blockhash);
             tx.recentBlockhash = latestBlockhash.blockhash;
         } catch (e) {
             console.error("Failed to create transaction:", e);

@@ -38,8 +38,9 @@ export default function Header({
             <Send size={20} />
           </a>
         </div>
-
-        <WalletMultiButton />
+        <div className="fixed top-4 right-4 z-[999999]">
+          <WalletMultiButton />
+        </div>
       </div>
     </header>
   );
