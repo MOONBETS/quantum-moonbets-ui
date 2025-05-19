@@ -74,7 +74,7 @@ export default function AdminPage() {
   const initializePlatform = async () => {
     if (!program || !publicKey) return;
     try {
-      await txService?.initializePlatform(web3.Keypair.generate())
+      await txService?.initializePlatform()
       const stats = await txService?.loadPlatformStats();
       setPlatformStatsList(stats ?? [])
     } catch (e) {

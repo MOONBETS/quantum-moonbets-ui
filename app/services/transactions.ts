@@ -10,7 +10,7 @@ export class TransactionService {
   private playerPda: PublicKey;
   private publicKey: PublicKey;
   private platformVault: PublicKey;
-  private platformStats: PublicKey;
+  private platformStatsPubkey: PublicKey;
   private statsBump: number;
   private vrfProgramAddress: PublicKey;
   private vaultBump: number;
@@ -40,12 +40,12 @@ export class TransactionService {
     this.platformVault = vaultPda;
 
     // Find stats bump
-    const [platformStats, statsBump] = web3.PublicKey.findProgramAddressSync(
+    const [platformStatsPda, statsBump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("platform_stats")],
       this.program.programId
     );
     this.statsBump = statsBump;
-    this.platformStats = platformStats;
+    this.platformStatsPubkey = platformStatsPda;
 
     // Find VRF program identity
     const [programIdentityPubkey, identityBump] = web3.PublicKey.findProgramAddressSync(
@@ -98,9 +98,8 @@ export class TransactionService {
 
   /**
    * Initialize the platform with stats and vault
-   * @param platformStatsKeypair Optional keypair for platform stats account
    */
-  async initializePlatform(platformStatsKeypair?: Keypair): Promise<void> {
+  async initializePlatform(): Promise<void> {
     try {
       // Get admin PDA
       const [adminPda] = web3.PublicKey.findProgramAddressSync(
@@ -108,20 +107,15 @@ export class TransactionService {
         this.program.programId
       );
 
-      // Use provided keypair or generate one
-      const statsKeypair = platformStatsKeypair || web3.Keypair.generate();
-      console.log("Platform stats:", statsKeypair.publicKey.toBase58());
-
       await this.program.methods
         .initializePlatform()
         .accountsStrict({
           admin: this.publicKey,
-          platformStats: statsKeypair.publicKey,
+          platformStats: this.platformStatsPubkey,
           platformVault: this.platformVault,
           adminAccount: adminPda,
           systemProgram: SystemProgram.programId,
         })
-        .signers([statsKeypair])
         .rpc();
 
       console.log("Platform initialized successfully");
@@ -130,16 +124,13 @@ export class TransactionService {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Fetch and verify platform stats
-      const platformStats = await this.program.account.platformStats.fetch(statsKeypair.publicKey);
+      const platformStats = await this.program.account.platformStats.fetch(this.platformStatsPubkey);
       console.log("Platform stats:", {
         isInitialized: platformStats.isInitialized,
         withdrawnToday: platformStats.withdrawnToday.toString(),
         primaryAdmin: platformStats.primaryAdmin.toString(),
         adminCount: platformStats.adminCount
       });
-
-      // Update platformStats in case it was generated
-      this.platformStats = statsKeypair.publicKey;
     } catch (e) {
       console.error("Platform initialization failed:", e);
       throw new Error("Platform initialization failed: " + (e as Error).message);
@@ -211,7 +202,7 @@ export class TransactionService {
         .addAdmin()
         .accountsStrict({
           primaryAdmin: this.publicKey,
-          platformStats: this.platformStats,
+          platformStats: this.platformStatsPubkey,
           admin: adminPda,
           newAdmin: newAdminPublicKey,
           systemProgram: SystemProgram.programId,
@@ -239,7 +230,7 @@ export class TransactionService {
         isActive: admin.isActive
       });
 
-      const platformStats = await this.program.account.platformStats.fetch(this.platformStats);
+      const platformStats = await this.program.account.platformStats.fetch(this.platformStatsPubkey);
       console.log("Platform admin count:", platformStats.adminCount);
 
     } catch (e) {
@@ -265,7 +256,7 @@ export class TransactionService {
         .removeAdmin()
         .accountsStrict({
           primaryAdmin: this.publicKey,
-          platformStats: this.platformStats,
+          platformStats: this.platformStatsPubkey,
           admin: adminPda,
         })
         .rpc({ commitment: "confirmed" });
@@ -283,7 +274,7 @@ export class TransactionService {
       });
 
       // Verify admin count decreased
-      const platformStats = await this.program.account.platformStats.fetch(this.platformStats);
+      const platformStats = await this.program.account.platformStats.fetch(this.platformStatsPubkey);
       console.log("Platform admin count:", platformStats.adminCount);
     } catch (e) {
       console.error("Removing admin failed:", e);
@@ -347,7 +338,7 @@ export class TransactionService {
         .accountsStrict({
           admin: this.publicKey,
           platformVault: this.platformVault,
-          platformStats: this.platformStats,
+          platformStats: this.platformStatsPubkey,
           adminAccount: adminPda, // Required for non-primary admin
           systemProgram: SystemProgram.programId,
         })
@@ -520,7 +511,7 @@ export class TransactionService {
           payer: this.publicKey,
           player: this.playerPda,
           platformVault: this.platformVault,
-          platformStats: this.platformStats,
+          platformStats: this.platformStatsPubkey,
           systemProgram: SystemProgram.programId,
         })
         .rpc();
