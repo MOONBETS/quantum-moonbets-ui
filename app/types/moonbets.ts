@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/moonbets.json`.
  */
 export type Moonbets = {
-    "address": "DmQntFUJqjBYk1VTHL8ZuBb5fRa2znTbKTJoimsDswSa",
+    "address": "H2FBHJsPcp7LKiUo7gpks3rp55s9EwQFRSyDYhvXP2UP",
     "metadata": {
         "name": "moonbets",
         "version": "0.1.0",
@@ -33,7 +33,30 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformStats",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    115
+                                ]
+                            }
+                        ]
+                    }
                 },
                 {
                     "name": "admin",
@@ -171,11 +194,38 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformStats",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    115
+                                ]
+                            }
+                        ]
+                    }
                 },
                 {
                     "name": "adminAccount",
                     "optional": true
+                },
+                {
+                    "name": "systemProgram",
+                    "address": "11111111111111111111111111111111"
                 }
             ],
             "args": [
@@ -205,10 +255,6 @@ export type Moonbets = {
                 },
                 {
                     "name": "player",
-                    "writable": true
-                },
-                {
-                    "name": "platformStats",
                     "writable": true
                 }
             ],
@@ -245,7 +291,29 @@ export type Moonbets = {
                 {
                     "name": "platformStats",
                     "writable": true,
-                    "signer": true
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    115
+                                ]
+                            }
+                        ]
+                    }
                 },
                 {
                     "name": "platformVault",
@@ -422,10 +490,6 @@ export type Moonbets = {
                     }
                 },
                 {
-                    "name": "platformStats",
-                    "writable": true
-                },
-                {
                     "name": "oracleQueue",
                     "writable": true
                 },
@@ -497,7 +561,30 @@ export type Moonbets = {
                 },
                 {
                     "name": "platformStats",
-                    "writable": true
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    115
+                                ]
+                            }
+                        ]
+                    }
                 },
                 {
                     "name": "admin",
@@ -574,6 +661,37 @@ export type Moonbets = {
                             }
                         ]
                     }
+                },
+                {
+                    "name": "platformStats",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    116,
+                                    102,
+                                    111,
+                                    114,
+                                    109,
+                                    95,
+                                    115,
+                                    116,
+                                    97,
+                                    116,
+                                    115
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "systemProgram",
+                    "address": "11111111111111111111111111111111"
                 }
             ],
             "args": []

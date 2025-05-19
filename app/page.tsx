@@ -37,18 +37,10 @@ export default function CasinoGame() {
   const [stats, setStats] = useState<Player | null>(null);
   const [txService, setTxService] = useState<TransactionService | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [walletConnected, setWalletConnected] = useState(false);
 
   const programID = new web3.PublicKey(idl.address);
   const seed = "playerd";
   const COMMITMENT = "confirmed";
-
-  const platformStats = new PublicKey("9coXMb4NdHqvqgyLxiKU1PFjVYWqhVvFh54uaFZaiF7x");
-
-  // Track wallet connection status
-  useEffect(() => {
-    setWalletConnected(connected);
-  }, [connected]);
 
   // Set up program when wallet is connected
   useEffect(() => {
@@ -81,8 +73,7 @@ export default function CasinoGame() {
     const service = new TransactionService(
       program,
       playerPda,
-      publicKey,
-      platformStats,
+      publicKey
     );
     setTxService(service);
 
@@ -158,57 +149,49 @@ export default function CasinoGame() {
   // Place a bet
   const placeBet = async () => {
     if (!txService || !publicKey) return;
-    
+
     try {
       setIsSpinning(true);
       setShowResult(null);
-      
-      // Convert bet amount to lamports (SOL's smallest unit)
+
       const betLamports = new BN(betAmount * LAMPORTS_PER_SOL);
 
-      console.log("Player Pda:", playerPda?.toBase58().toString());
-      
-      // Place the bet transaction
+      // console.log("Player Pda:", playerPda?.toBase58().toString());
+
+      // Place the bet and wait for the event result
       const betResult = await txService.placeBet(betLamports);
-      
-      // Refresh player stats
-      const updatedStats = await getStats();
-      
-      // Determine if the bet was a win or loss
-      // Compare the current stats with previous stats
-      if (updatedStats) {
-        let result: "win" | "lose" = "lose";
-        
-        // Logic to determine if the player won:
-        // If stats.wins increased after the bet, it was a win
-        if (stats && updatedStats.wins && stats.wins && 
-            updatedStats.wins > stats.wins) {
-          result = "win";
-        }
-        
-        // Update the UI
-        setShowResult(result);
-        
-        // Trigger confetti on win
-        if (result === "win") {
-          setTimeout(() => {
-            confetti({
-              particleCount: 100,
-              spread: 200,
-              origin: { y: 0.6 },
-              colors: [
-                "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", 
-                "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
-                "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
-              ],
-            });
-          }, 500);
-        }
+
+      console.log("Bet result from event:", betResult);
+
+      // Use event data to determine win or lose
+      const result: "win" | "lose" = betResult.won ? "win" : "lose";
+
+      // Update the UI
+      setShowResult(result);
+
+      // Optional: Display more detailed info if needed
+      // setDiceResult(betResult.result.toNumber());
+      // setPayout(betResult.payout.toNumber());
+
+      if (result === "win") {
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            spread: 200,
+            origin: { y: 0.6 },
+            colors: [
+              "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
+              "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
+              "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
+            ],
+          });
+        }, 500);
       }
-      
-      // Refresh wallet balance
+
+      // Refresh player stats and wallet balance
+      await getStats();
       await fetchWalletBalance();
-      
+
     } catch (e) {
       console.error("Failed to place bet:", e);
       setErrorMessage("Failed to place bet: " + (e as Error).message);
@@ -216,6 +199,7 @@ export default function CasinoGame() {
       setIsSpinning(false);
     }
   };
+
 
   // Withdraw winnings
   const withdrawWinnings = async () => {
@@ -242,6 +226,10 @@ export default function CasinoGame() {
     }
   }, [errorMessage]);
 
+  // console.log("connected:", connected);
+  // console.log("isSpinning:", isSpinning);
+  // console.log("betAmount:", betAmount);
+  // console.log("balance:", balance);
   // Check if betting is allowed
   const canBet = connected && !isSpinning && betAmount > 0 && betAmount <= balance;
 

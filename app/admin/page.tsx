@@ -58,7 +58,6 @@ export default function AdminPage() {
             prog,
             web3.PublicKey.default,
             publicKey,
-            stats[0].publicKey
           );
           settxService(trxService);
 

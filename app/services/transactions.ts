@@ -4,7 +4,6 @@ import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { BN, web3 } from "@coral-xyz/anchor";
 import { DiceRolledEvent } from "../types/events";
 import { PlatformStats, Player, Admin } from "../types/accounts";
-import { Wallet, WalletContextState } from "@solana/wallet-adapter-react";
 
 export class TransactionService {
   private program: MoonbetsProgram;
@@ -12,6 +11,7 @@ export class TransactionService {
   private publicKey: PublicKey;
   private platformVault: PublicKey;
   private platformStats: PublicKey;
+  private statsBump: number;
   private vrfProgramAddress: PublicKey;
   private vaultBump: number;
   private programIdentityPubkey: PublicKey;
@@ -24,12 +24,10 @@ export class TransactionService {
     program: MoonbetsProgram,
     playerPda: PublicKey,
     publicKey: PublicKey,
-    platformStats: PublicKey
   ) {
     this.program = program;
     this.playerPda = playerPda;
     this.publicKey = publicKey;
-    this.platformStats = platformStats;
     this.connection = program.provider.connection;
     this.wallet = program.provider.wallet;
 
@@ -40,6 +38,14 @@ export class TransactionService {
     );
     this.vaultBump = vaultBump;
     this.platformVault = vaultPda;
+
+    // Find stats bump
+    const [platformStats, statsBump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("platform_stats")],
+      this.program.programId
+    );
+    this.statsBump = statsBump;
+    this.platformStats = platformStats;
 
     // Find VRF program identity
     const [programIdentityPubkey, identityBump] = web3.PublicKey.findProgramAddressSync(
@@ -343,7 +349,7 @@ export class TransactionService {
           platformVault: this.platformVault,
           platformStats: this.platformStats,
           adminAccount: adminPda, // Required for non-primary admin
-          // systemProgram: SystemProgram.programId,
+          systemProgram: SystemProgram.programId,
         })
         .rpc({ commitment: "confirmed" });
 
@@ -367,56 +373,64 @@ export class TransactionService {
    * @param betChoice Optional bet choice (1-6), defaults to random
    * @param clientSeed Optional client seed for randomness, defaults to 42
    */
-  async placeBet(betAmount: BN, betChoice?: number, clientSeed?: number): Promise<void> {
-    try {
-      if (!betAmount || betAmount.ltn(0)) {
-        throw new Error("Invalid bet amount");
-      }
+  async placeBet(betAmount: BN, betChoice?: number, clientSeed?: number): Promise<DiceRolledEvent> {
+    if (!betAmount || betAmount.ltn(0)) {
+      throw new Error("Invalid bet amount");
+    }
 
-      // Use provided values or defaults
-      const seed = clientSeed ? new BN(clientSeed) : new BN(42);
-      const choice = betChoice || Math.floor(Math.random() * 6) + 1;
+    // Use provided values or defaults
+    const seed = clientSeed ? new BN(clientSeed) : new BN(42);
+    const choice = betChoice || Math.floor(Math.random() * 6) + 1;
 
-      console.log(`Placing bet of ${betAmount.toString()} lamports on ${choice}...`);
+    console.log(`Placing bet of ${betAmount.toString()} lamports on ${choice}...`);
 
-      // Get player account before bet
-      const playerBefore = await this.program.account.player.fetch(this.playerPda);
-      console.log("Player before bet:", {
-        lastResult: playerBefore.lastResult,
-        currentBet: playerBefore.currentBet,
-        totalGames: playerBefore.totalGames
-      });
+    // Get player account before bet
+    const playerBefore = await this.program.account.player.fetch(this.playerPda);
+    console.log("Player before bet:", {
+      lastResult: playerBefore.lastResult,
+      currentBet: playerBefore.currentBet,
+      totalGames: playerBefore.totalGames
+    });
 
-      // Setup event listener
-      let listener: number | null = null;
-      const eventPromise = new Promise<DiceRolledEvent>((resolve) => {
-        listener = this.program.addEventListener("diceRolled", (event: DiceRolledEvent) => {
-          if (event.player.equals(this.playerPda)) {
-            console.log("DiceRolled event detected:", {
-              player: event.player.toBase58(),
-              result: event.result,
-              won: event.won,
-              payout: event.payout.toString()
-            });
-            resolve(event);
+    // Setup event listener
+    let listener: number | null = null;
+    const eventPromise = new Promise<DiceRolledEvent>((resolve, reject) => {
+      listener = this.program.addEventListener("diceRolled", (event: DiceRolledEvent) => {
+        if (event.player.equals(this.playerPda)) {
+          console.log("DiceRolled event detected:", {
+            player: event.player.toBase58(),
+            result: event.result,
+            won: event.won,
+            payout: event.payout.toString()
+          });
+          resolve(event);
 
-            // Remove the listener immediately after resolving
-            if (listener !== null) {
-              this.program.removeEventListener(listener);
-              listener = null;
-            }
+          // Remove the listener
+          if (listener !== null) {
+            this.program.removeEventListener(listener);
+            listener = null;
           }
-        });
+        }
       });
 
-      // Place bet
+      // Optional: add a timeout to prevent hanging
+      setTimeout(() => {
+        if (listener !== null) {
+          this.program.removeEventListener(listener);
+          listener = null;
+        }
+        reject(new Error("Timed out waiting for DiceRolled event"));
+      }, 30000); // 30 seconds
+    });
+
+    try {
+      // Send transaction
       await this.program.methods
         .play(choice, betAmount, seed)
         .accountsStrict({
           payer: this.publicKey,
           player: this.playerPda,
           platformVault: this.platformVault,
-          platformStats: this.platformStats,
           oracleQueue: this.oracleQueue,
           programIdentity: this.programIdentityPubkey,
           slotHashes: web3.SYSVAR_SLOT_HASHES_PUBKEY,
@@ -426,11 +440,16 @@ export class TransactionService {
         .rpc({ commitment: "confirmed" });
 
       console.log("Bet placed successfully");
+
+      // Wait for the event
+      const eventResult = await eventPromise;
+      return eventResult;
     } catch (e) {
       console.error("Bet failed:", e);
       throw new Error("Bet failed: " + (e as Error).message);
     }
   }
+
 
   /**
    * Wait for the result of a bet
@@ -501,7 +520,8 @@ export class TransactionService {
           payer: this.publicKey,
           player: this.playerPda,
           platformVault: this.platformVault,
-          // systemProgram: SystemProgram.programId,
+          platformStats: this.platformStats,
+          systemProgram: SystemProgram.programId,
         })
         .rpc();
 
