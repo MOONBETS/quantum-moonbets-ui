@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
         let body: PlayBetRequest;
         try {
             body = await req.json();
-            console.log("Request body parsed:", body);
 
             // Validate essential fields
             if (!body.publicKey) {
@@ -72,12 +71,12 @@ export async function POST(req: NextRequest) {
             // Parse client seed (or use default)
             clientSeed = new BN(body.clientSeed || 42);
 
-            console.log("Inputs validated:", {
-                userPubkey: userPubkey.toString(),
-                betAmount: betAmount.toString(),
-                betChoice,
-                clientSeed: clientSeed.toString()
-            });
+            // console.log("Inputs validated:", {
+            //     userPubkey: userPubkey.toString(),
+            //     betAmount: betAmount.toString(),
+            //     betChoice,
+            //     clientSeed: clientSeed.toString()
+            // });
         } catch (e) {
             console.error("Input validation failed:", e);
             return NextResponse.json({ error: "Invalid input parameters" }, { status: 400 });
@@ -93,31 +92,29 @@ export async function POST(req: NextRequest) {
                 [Buffer.from("playerd"), userPubkey.toBuffer()],
                 program.programId
             );
-            console.log("Player PDA:", playerPda.toString());
+            // console.log("Player PDA:", playerPda.toString());
 
             // Generate platform vault PDA
             [platformVault] = PublicKey.findProgramAddressSync(
                 [Buffer.from("platform_vault")],
                 program.programId
             );
-            console.log("Platform vault PDA:", platformVault.toString());
+            // console.log("Platform vault PDA:", platformVault.toString());
 
             // Get program identity pubkey
             [programIdentityPubkey] = PublicKey.findProgramAddressSync(
                 [Buffer.from("identity")],
                 program.programId
             );
-            console.log("Program identity:", programIdentityPubkey.toString());
+            // console.log("Program identity:", programIdentityPubkey.toString());
 
             // Setup VRF oracle queue
             oracleQueue = new PublicKey("Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh");
 
-            console.log("Oracle queue:", oracleQueue.toString());
-
             // VRF Program Address (replace with actual address if different)
             // Note: You may need to adjust this if you're using a specific VRF program
             vrfProgramAddress = new PublicKey("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
-            console.log("VRF Program Address:", vrfProgramAddress.toString());
+            // console.log("VRF Program Address:", vrfProgramAddress.toString());
 
         } catch (e: any) {
             console.error("Failed to setup program and accounts:", e);
@@ -144,7 +141,7 @@ export async function POST(req: NextRequest) {
                 })
                 .instruction();
 
-            console.log("Play instruction created");
+            // console.log("Play instruction created");
         } catch (e) {
             console.error("Failed to create play instruction:", e);
             return NextResponse.json({ error: "Failed to create play instruction" }, { status: 500 });
@@ -157,7 +154,7 @@ export async function POST(req: NextRequest) {
             tx.feePayer = userPubkey;
 
             latestBlockhash = await program.provider.connection.getLatestBlockhash();
-            console.log("Latest blockhash fetched:", latestBlockhash.blockhash);
+            // console.log("Latest blockhash fetched:", latestBlockhash.blockhash);
             tx.recentBlockhash = latestBlockhash.blockhash;
         } catch (e) {
             console.error("Failed to create transaction:", e);
@@ -165,14 +162,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Serialize transaction
-        let serialized;
-        try {
-            serialized = tx.serialize({ requireAllSignatures: false });
-            console.log("Transaction serialized successfully");
-        } catch (e: any) {
-            console.error("Failed to serialize transaction:", e);
-            return NextResponse.json({ error: "Failed to serialize transaction" }, { status: 500 });
-        }
+        const serialized = tx.serialize({ requireAllSignatures: false });
 
         // Return response with transaction and parameters
         return NextResponse.json({
