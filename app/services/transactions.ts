@@ -1,6 +1,6 @@
 // services/transaction.ts
 import { MoonbetsProgram } from "../types/program";
-import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { BN, web3 } from "@coral-xyz/anchor";
 import { DiceRolledEvent } from "../types/events";
 import { PlatformStats, Player, Admin } from "../types/accounts";
@@ -75,21 +75,6 @@ export class TransactionService {
         .rpc();
 
       console.log("Player initialized successfully");
-
-      // Wait for confirmation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Fetch and log player account
-      const player = await this.program.account.player.fetch(this.playerPda);
-      console.log("Player account:", {
-        lastResult: player.lastResult,
-        currentBet: player.currentBet,
-        lastBetAmount: player.lastBetAmount.toString(),
-        pendingWithdrawal: player.pendingWithdrawal.toString(),
-        wins: player.wins,
-        losses: player.losses,
-        totalGames: player.totalGames
-      });
     } catch (e) {
       console.error("Player initialization failed:", e);
       throw new Error("Player initialization failed: " + (e as Error).message);
@@ -101,6 +86,7 @@ export class TransactionService {
    */
   async initializePlatform(): Promise<void> {
     try {
+      console.log("Initializing...")
       // Get admin PDA
       const [adminPda] = web3.PublicKey.findProgramAddressSync(
         [Buffer.from("admin"), this.publicKey.toBuffer()],
@@ -119,18 +105,6 @@ export class TransactionService {
         .rpc();
 
       console.log("Platform initialized successfully");
-
-      // Wait for confirmation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Fetch and verify platform stats
-      const platformStats = await this.program.account.platformStats.fetch(this.platformStatsPubkey);
-      console.log("Platform stats:", {
-        isInitialized: platformStats.isInitialized,
-        withdrawnToday: platformStats.withdrawnToday.toString(),
-        primaryAdmin: platformStats.primaryAdmin.toString(),
-        adminCount: platformStats.adminCount
-      });
     } catch (e) {
       console.error("Platform initialization failed:", e);
       throw new Error("Platform initialization failed: " + (e as Error).message);
@@ -290,9 +264,6 @@ export class TransactionService {
     try {
       console.log(`Depositing ${amount.toString()} lamports to platform vault...`);
 
-      const balanceBefore = await this.program.provider.connection.getBalance(this.platformVault);
-      console.log("Platform balance before:", balanceBefore / web3.LAMPORTS_PER_SOL);
-
       await this.program.methods
         .adminDeposit(amount)
         .accountsStrict({
@@ -307,9 +278,6 @@ export class TransactionService {
       // Wait for confirmation
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const balanceAfter = await this.program.provider.connection.getBalance(this.platformVault);
-      console.log("Platform balance after:", balanceAfter / web3.LAMPORTS_PER_SOL);
-      console.log("Difference:", (balanceAfter - balanceBefore) / web3.LAMPORTS_PER_SOL);
     } catch (e) {
       console.error("Admin deposit failed:", e);
       throw new Error("Admin deposit failed: " + (e as Error).message);
@@ -330,9 +298,6 @@ export class TransactionService {
         this.program.programId
       );
 
-      const adminBalanceBefore = await this.program.provider.connection.getBalance(this.publicKey);
-      console.log("Admin balance before:", adminBalanceBefore / web3.LAMPORTS_PER_SOL);
-
       await this.program.methods
         .adminWithdraw(amount)
         .accountsStrict({
@@ -349,9 +314,6 @@ export class TransactionService {
       // Wait for confirmation
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const adminBalanceAfter = await this.program.provider.connection.getBalance(this.publicKey);
-      console.log("Admin balance after:", adminBalanceAfter / web3.LAMPORTS_PER_SOL);
-      console.log("Difference:", (adminBalanceAfter - adminBalanceBefore) / web3.LAMPORTS_PER_SOL);
     } catch (e) {
       console.error("Admin withdrawal failed:", e);
       throw new Error("Admin withdrawal failed: " + (e as Error).message);
@@ -502,9 +464,6 @@ export class TransactionService {
       const playerBefore = await this.program.account.player.fetch(this.playerPda);
       console.log("Pending withdrawal:", playerBefore.pendingWithdrawal.toString());
 
-      const balanceBefore = await this.program.provider.connection.getBalance(this.publicKey);
-      console.log("Balance before:", balanceBefore / web3.LAMPORTS_PER_SOL);
-
       await this.program.methods
         .withdraw()
         .accountsStrict({
@@ -520,10 +479,6 @@ export class TransactionService {
 
       // Wait for confirmation
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const balanceAfter = await this.program.provider.connection.getBalance(this.publicKey);
-      console.log("Balance after:", balanceAfter / web3.LAMPORTS_PER_SOL);
-      console.log("Difference:", (balanceAfter - balanceBefore) / web3.LAMPORTS_PER_SOL);
 
       const playerAfter = await this.program.account.player.fetch(this.playerPda);
       console.log("Pending withdrawal after:", playerAfter.pendingWithdrawal.toString());

@@ -42,6 +42,29 @@ export default function CasinoGame() {
   const seed = "playerd";
   const COMMITMENT = "confirmed";
 
+  const getBalance = async (wallet: string) => {
+    const res = await fetch(`/api/solana/balance?wallet=${wallet}`);
+    const data = await res.json();
+    return data.sol;
+  };
+
+  const getPlayerAccount = async (wallet: string) => {
+    const res = await fetch("/api/platform/getPlayerAccount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ publicKey: wallet }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to fetch player account");
+    }
+
+    return data as Player; // Contains playerPda and playerAccount
+  };
+
+
   // Set up program when wallet is connected
   useEffect(() => {
     if (!publicKey) return;
@@ -55,11 +78,11 @@ export default function CasinoGame() {
     setProgram(prog);
 
     (async () => {
-      const [pda] = web3.PublicKey.findProgramAddressSync(
-        [Buffer.from(seed), publicKey.toBytes()],
+      const [playerPda] = web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("playerd"), publicKey.toBytes()],
         programID
       );
-      setPlayerPda(pda);
+      setPlayerPda(playerPda);
     })();
 
     // Fetch wallet balance
@@ -84,8 +107,8 @@ export default function CasinoGame() {
   const fetchWalletBalance = async () => {
     if (!publicKey || !connection) return;
     try {
-      const balance = await connection.getBalance(publicKey);
-      setBalance(balance / LAMPORTS_PER_SOL);
+      const balance = await getBalance(publicKey.toBase58());
+      setBalance(balance);
     } catch (e) {
       console.error("Failed to fetch balance:", e);
       setErrorMessage("Failed to fetch wallet balance");
@@ -100,7 +123,7 @@ export default function CasinoGame() {
       await getStats();
     } catch (e) {
       console.log("Player account doesn't exist, needs initialization:", e);
-      await txService?.initializePlayer()
+      await initializePlayer()
     }
   };
 
@@ -109,7 +132,8 @@ export default function CasinoGame() {
     if (!program || !playerPda) return;
     
     try {
-      const account = await program.account.player.fetch(playerPda);
+      const account = await getPlayerAccount(playerPda.toBase58());
+
       setStats(account);
       console.log("Player stats:", account);
       
@@ -146,75 +170,224 @@ export default function CasinoGame() {
     }
   };
 
-  // Place a bet
-  const placeBet = async () => {
-    if (!txService || !publicKey) return;
-
-    try {
-      setIsSpinning(true);
-      setShowResult(null);
-
-      const betLamports = new BN(betAmount * LAMPORTS_PER_SOL);
-
-      // console.log("Player Pda:", playerPda?.toBase58().toString());
-
-      // Place the bet and wait for the event result
-      const betResult = await txService.placeBet(betLamports);
-
-      console.log("Bet result from event:", betResult);
-
-      // Use event data to determine win or lose
-      const result: "win" | "lose" = betResult.won ? "win" : "lose";
-
-      // Update the UI
-      setShowResult(result);
-
-      // Optional: Display more detailed info if needed
-      // setDiceResult(betResult.result.toNumber());
-      // setPayout(betResult.payout.toNumber());
-
-      if (result === "win") {
-        setTimeout(() => {
-          confetti({
-            particleCount: 100,
-            spread: 200,
-            origin: { y: 0.6 },
-            colors: [
-              "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
-              "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
-              "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
-            ],
-          });
-        }, 500);
+  // Client-side implementation for reference
+  // Use this in your React component
+  const initializePlayer = async () => {
+      if (!publicKey || !signTransaction) {
+          toast.error("Wallet not connected");
+          return;
       }
 
-      // Refresh player stats and wallet balance
-      await getStats();
-      await fetchWalletBalance();
+      try {
+          console.log("Initializing player...");
+          
+          const res = await fetch("/api/platform/initializePlayer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ publicKey: publicKey.toBase58() }),
+          });
 
-    } catch (e) {
-      console.error("Failed to place bet:", e);
-      setErrorMessage("Failed to place bet: " + (e as Error).message);
-    } finally {
-      setIsSpinning(false);
+          // Handle HTTP errors
+          if (!res.ok) {
+              const errorData = await res.json().catch(() => ({}));
+              console.error("Server response:", errorData);
+              throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
+          }
+
+          const data = await res.json();
+          console.log("API response:", data);
+          
+          if (data.error) throw new Error(data.error);
+          if (!data.transaction) throw new Error("No transaction returned");
+
+          console.log("Deserializing and signing transaction...");
+          const txBuffer = Buffer.from(data.transaction, "base64");
+          const tx = web3.Transaction.from(txBuffer);
+
+          const signed = await signTransaction(tx);
+          console.log("Transaction signed, sending to network...");
+          
+          const sig = await connection.sendRawTransaction(signed.serialize());
+          console.log("Transaction sent with signature:", sig);
+          
+          console.log("Confirming transaction...");
+          await connection.confirmTransaction(sig, "confirmed");
+          console.log("Transaction confirmed!");
+
+          // Store the playerPda returned from the API if needed
+          if (data.playerPda) {
+              console.log("Player PDA:", data.playerPda);
+              // You might want to store this in state or context
+              // setPlayerPda(data.playerPda);
+          }
+
+          toast.success("Player initialized successfully");
+          
+          // Return the player PDA in case the caller needs it
+          return data.playerPda;
+      } catch (err: any) {
+          console.error("Failed to initialize player:", err);
+          toast.error(`Player initialization failed: ${err.message}`);
+          throw err;
+      }
+  };
+
+  // Place a bet
+  const placeBet = async () => {
+    if (!publicKey || !signTransaction || !connection || !program) {
+        toast.error("Wallet not connected");
+        return;
     }
+
+    try {
+        setIsSpinning(true);
+        setShowResult(null);
+
+        console.log("Placing bet...");
+
+        const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
+
+        const requestBody = {
+            publicKey: publicKey.toBase58(),
+            betAmount: betAmountLamports,
+            // betChoice: betChoice,
+            // clientSeed: clientSeed,
+        };
+
+        const res = await fetch("/api/platform/playBet", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
+        }
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        if (!data.transaction) throw new Error("No transaction returned");
+
+        const playerPda = new PublicKey(data.playerPda);
+
+        let listener: number | null = null;
+        const eventPromise = new Promise<any>((resolve, reject) => {
+
+            listener = program.addEventListener("diceRolled", (event: any) => {
+                if (event.player.equals(playerPda)) {
+                    resolve(event);
+                    if (listener !== null) {
+                        program.removeEventListener(listener);
+                        listener = null;
+                    }
+                }
+            });
+
+            setTimeout(() => {
+                if (listener !== null) {
+                    program.removeEventListener(listener);
+                    listener = null;
+                }
+                reject(new Error("Timed out waiting for DiceRolled event"));
+            }, 30000);
+        });
+
+        console.log("Deserializing and signing transaction...");
+        const txBuffer = Buffer.from(data.transaction, "base64");
+        const tx = web3.Transaction.from(txBuffer);
+
+        const signed = await signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+
+        console.log("Transaction sent with signature:", sig);
+        await connection.confirmTransaction(sig, "confirmed");
+
+        const eventResult = await eventPromise;
+
+        const result: "win" | "lose" = eventResult.won ? "win" : "lose";
+        setShowResult(result);
+
+        if (result === "win") {
+            setTimeout(() => {
+                confetti({
+                    particleCount: 100,
+                    spread: 200,
+                    origin: { y: 0.6 },
+                    colors: [
+                        "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
+                        "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
+                        "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
+                    ],
+                });
+            }, 500);
+        }
+
+        if (eventResult.won) {
+            toast.success(`You won! Dice rolled: ${eventResult.result}, Payout: ${eventResult.payout.toNumber() / LAMPORTS_PER_SOL} SOL`);
+        } else {
+            toast.error(`You lost! Dice rolled: ${eventResult.result}`);
+        }
+
+        await getStats?.();
+        await fetchWalletBalance?.();
+
+        return eventResult;
+
+      } catch (err) {
+          console.error("Failed to place bet:", err);
+          toast.error(`Bet failed: ${(err as Error).message}`);
+          setErrorMessage?.("Failed to place bet: " + (err as Error).message);
+          throw err;
+      } finally {
+          setIsSpinning(false);
+      }
   };
 
 
   // Withdraw winnings
   const withdrawWinnings = async () => {
-    if (!txService) return;
-    
     try {
-      await txService.withdraw();
+      if (!publicKey || !signTransaction || !connection || !program) {
+          toast.error("Wallet not connected");
+          return;
+      }
+
+      const player = publicKey.toBase58()
+
+      const res = await fetch("/api/platform/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Withdraw request failed");
+      }
+
+      // 2. Decode and deserialize transaction
+      console.log("Deserializing and signing transaction...");
+      const txBuffer = Buffer.from(data.transaction, "base64");
+      const tx = web3.Transaction.from(txBuffer);
+
+      const signed = await signTransaction(tx);
+      const sig = await connection.sendRawTransaction(signed.serialize());
+
+      console.log("Transaction sent with signature:", sig);
+      await connection.confirmTransaction(sig, "confirmed");
+
+      console.log("Withdraw transaction sent with signature:", sig);
+
       await getStats();
       await fetchWalletBalance();
-      toast.success("Winnings withdrawn successfully!");
     } catch (e) {
       console.error("Failed to withdraw:", e);
       setErrorMessage("Failed to withdraw: " + (e as Error).message);
     }
   };
+
 
   // Reset error message after 5 seconds
   useEffect(() => {

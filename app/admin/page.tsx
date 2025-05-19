@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider, BN, Program, web3 } from "@coral-xyz/anchor";
@@ -10,6 +10,7 @@ import { PlatformStats } from "../types/accounts";
 import { toast } from "react-hot-toast";
 import MoonBackground from "@/components/moon-background";
 import { TransactionService } from "../services/transactions";
+import { Transaction } from "@solana/web3.js";
 
 const LAMPORTS_PER_SOL = 1000000000;
 
@@ -24,11 +25,60 @@ export default function AdminPage() {
   const [depositAmount, setDepositAmount] = useState("1");
   const [withdrawAmount, setWithdrawAmount] = useState("1");
   const [platformBalance, setPlatformBalance] = useState<number>(0);
-  const [platformVault, setPlatformVault] = useState<web3.PublicKey | null>(null);
   const [adminPubkeyInput, setAdminPubkeyInput] = useState("");
+  
+  // Track whether we've already initialized
+  // const hasInitialized = useRef(false);
+
+  const safeParseAmount = (value: any): number => {
+    if (!value) return 0;
+    
+    // Handle BN objects
+    if (typeof value.toNumber === 'function') {
+      return value.toNumber() / LAMPORTS_PER_SOL;
+    }
+    
+    // Handle string numbers
+    if (typeof value === 'string') {
+      // Remove leading zeros to avoid octal interpretation issues
+      const cleanValue = value.replace(/^0+/, '') || '0';
+      return parseInt(cleanValue, 10) / LAMPORTS_PER_SOL;
+    }
+    
+    // Handle plain numbers
+    if (typeof value === 'number') {
+      return value / LAMPORTS_PER_SOL;
+    }
+    
+    // Default fallback
+    return 0;
+  };
+
+  const getBalance = async (wallet: string) => {
+    const res = await fetch(`/api/solana/balance?wallet=${wallet}`);
+    const data = await res.json();
+    console.log("balance data:", data)
+    return data.sol;
+  };
+
+  const getplatformStats = async () => {
+    const res = await fetch(`/api/platform/stats`);
+    const data = await res.json();
+    console.log("getplatformStats:", data)
+    return data;
+  };
+
+  const getplatformBalance = async () => {
+    const res = await fetch(`/api/platform/balance`);
+    const data = await res.json();
+    console.log("getplatformBalance:", data)
+    return data;
+  };
+
 
   useEffect(() => {
     if (!publicKey) return;
+    // hasInitialized.current = true;
 
     const provider = new AnchorProvider(
       connection,
@@ -41,28 +91,27 @@ export default function AdminPage() {
 
     (async () => {
       try {
-        const stats = await prog.account.platformStats.all();
+        const [vaultPda] = web3.PublicKey.findProgramAddressSync(
+          [Buffer.from("platform_vault")],
+          prog.programId
+        );
+
+        const trxService = new TransactionService(
+          prog,
+          web3.PublicKey.default,
+          publicKey
+        );
+        console.log("Setting service...");
+        settxService(trxService);
+        console.log("GEtting stats...");
+        const stats = await getplatformStats();
+        console.log("stats...:", stats);
         if (stats.length === 0) {
           toast("No stats found. Admin must initialize.");
         } else {
-          setPlatformStatsList(stats.map((a) => a.account));
-
-          const [vaultPda, vaultBump] = web3.PublicKey.findProgramAddressSync(
-                [Buffer.from("platform_vault")],
-                prog.programId
-              );
-
-          setPlatformVault(vaultPda);
-
-          const trxService = new TransactionService(
-            prog,
-            web3.PublicKey.default,
-            publicKey,
-          );
-          settxService(trxService);
-
-          const balance = await connection.getBalance(vaultPda);
-          setPlatformBalance(balance / LAMPORTS_PER_SOL);
+          setPlatformStatsList(stats ?? []);
+          const balance = await getBalance(vaultPda.toBase58());
+          setPlatformBalance(balance);
         }
       } catch (error) {
         console.error("Error loading platform stats:", error);
@@ -70,18 +119,59 @@ export default function AdminPage() {
       }
     })();
   }, [connection, publicKey]);
-
+  
+  // 2. Updated client-side initialization function
+  // Updated client-side initialization function with detailed error handling
   const initializePlatform = async () => {
-    if (!program || !publicKey) return;
+    if (!publicKey || !signTransaction) {
+        toast.error("Wallet not connected");
+        return;
+    }
+
     try {
-      await txService?.initializePlatform()
-      const stats = await txService?.loadPlatformStats();
-      setPlatformStatsList(stats ?? [])
-    } catch (e) {
-      console.error("Failed to initialize platform:", e);
-      toast.error("Failed to initialize platform: " + (e as Error).message);
+        console.log("Initializing platform...");
+        console.log("Public key:", publicKey.toBase58());
+        
+        const res = await fetch("/api/solana/initializePlatform", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ publicKey: publicKey.toBase58() }),
+        });
+
+        // Handle HTTP errors
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            console.error("Server response:", errorData);
+            throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
+        }
+
+        const data = await res.json();
+        console.log("API response:", data);
+        
+        if (data.error) throw new Error(data.error);
+        if (!data.transaction) throw new Error("No transaction returned");
+
+        console.log("Deserializing and signing transaction...");
+        const txBuffer = Buffer.from(data.transaction, "base64");
+        const tx = Transaction.from(txBuffer);
+
+        const signed = await signTransaction(tx);
+        console.log("Transaction signed, sending to network...");
+        
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        console.log("Transaction sent with signature:", sig);
+        
+        console.log("Confirming transaction...");
+        await connection.confirmTransaction(sig, "confirmed");
+        console.log("Transaction confirmed!");
+
+        toast.success("Platform initialized successfully");
+    } catch (err: any) {
+        console.error("Failed to initialize platform:", err);
+        toast.error(`Initialization failed: ${err.message}`);
     }
   };
+
 
   const handleDeposit = async () => {
     if (!txService || !program) {
@@ -198,10 +288,7 @@ export default function AdminPage() {
                   <p className="text-gray-400">Withdrawn Today</p>
                   <p className="font-medium">
                     {platformStatsList[0]?.withdrawnToday
-                      ? (
-                          platformStatsList[0].withdrawnToday.toNumber() /
-                          LAMPORTS_PER_SOL
-                        ).toFixed(4)
+                      ? safeParseAmount(platformStatsList[0].withdrawnToday).toFixed(4)
                       : "0.0000"}{" "}
                     SOL
                   </p>
