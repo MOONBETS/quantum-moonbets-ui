@@ -172,25 +172,45 @@ export default function AdminPage() {
     }
   };
 
-
   const handleDeposit = async () => {
-    if (!txService || !program) {
-      toast.error("Transaction service not initialized");
-      return;
-    }
-
     try {
+      if (!publicKey || !signTransaction || !depositAmount) {
+        throw new Error("Wallet not connected or cannot sign");
+      }
+
       const amount = Number(depositAmount);
+
       if (isNaN(amount) || amount <= 0) {
         toast.error("Please enter a valid deposit amount");
         return;
       }
 
       const lamports = new BN(amount * LAMPORTS_PER_SOL);
-      await txService.adminDeposit(lamports);
-      toast.success("Deposit successful");
-      const stats = await txService?.loadPlatformStats();
-      setPlatformStatsList(stats ?? []);
+
+      const res = await fetch("/api/platform/adminDeposit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          admin: publicKey.toBase58(),
+          amount: lamports,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Admin deposit request failed");
+      }
+
+      const serializedTx = Buffer.from(data.transaction, "base64");
+      const tx = Transaction.from(serializedTx);
+
+      const signedTx = await signTransaction(tx);
+      const txid = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(txid, "confirmed");
+
+      console.log("Admin deposit successful:", txid);
+      // return { txid, platformVault: data.platformVault };
     } catch (e) {
       console.error("Deposit failed:", e);
       toast.error("Deposit failed: " + (e as Error).message);
@@ -221,8 +241,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddAdmin = async (
-  ) => {
+  const handleAddAdmin = async () => {
     try {
       if (!publicKey || !signTransaction || !adminPubkeyInput) {
         throw new Error("Wallet not connected or can't sign");
@@ -264,14 +283,40 @@ export default function AdminPage() {
   };
 
   const handleRemoveAdmin = async () => {
-    if (!txService || !adminPubkeyInput) return;
-
     try {
-      const adminToRemove = new web3.PublicKey(adminPubkeyInput);
-      await txService.removeAdmin(adminToRemove);
-      toast.success("Admin removed successfully");
-      const stats = await txService?.loadPlatformStats();
-      setPlatformStatsList(stats ?? [])
+      if (!publicKey || !signTransaction || !adminPubkeyInput) {
+        throw new Error("Wallet not connected or can't sign");
+      }
+
+      const res = await fetch("/api/platform/removeAdmin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          primaryAdmin: publicKey.toBase58(),
+          adminPublicKey: adminPubkeyInput,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Remove admin request failed");
+      }
+
+      const serializedTx = Buffer.from(data.transaction, "base64");
+      const tx = Transaction.from(serializedTx);
+
+      const signedTx = await signTransaction(tx);
+      const txid = await connection.sendRawTransaction(signedTx.serialize());
+
+      await connection.confirmTransaction(txid, "confirmed");
+
+      console.log("Admin removed with txid:", txid);
+      // return {
+      //   txid,
+      //   adminPda: data.adminPda,
+      //   platformStats: data.platformStats,
+      // };
     } catch (e) {
       console.error("Failed to remove admin:", e);
       toast.error("Failed to remove admin: " + (e as Error).message);
