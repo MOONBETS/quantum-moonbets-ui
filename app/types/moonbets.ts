@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/moonbets.json`.
  */
 export type Moonbets = {
-    "address": "H2FBHJsPcp7LKiUo7gpks3rp55s9EwQFRSyDYhvXP2UP",
+    "address": "2zdSF8zfWrpaNEFTnpSPwbHmuGfFpY7jsSoRYeKeDetf",
     "metadata": {
         "name": "moonbets",
         "version": "0.1.0",
