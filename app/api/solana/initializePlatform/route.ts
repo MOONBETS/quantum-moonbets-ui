@@ -1,7 +1,7 @@
 // Enhanced route.ts with better error logging
 // app/api/solana/initializePlatform/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getProgram } from "@/lib/solana/program";
+import { getProgram, platformStats, platformVault } from "@/lib/solana/program";
 import { SystemProgram, Transaction, PublicKey } from "@solana/web3.js";
 
 export async function POST(req: NextRequest) {
@@ -51,25 +51,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Create PDAs with error handling
-        let adminPda, platformStats, platformVault;
+        let adminPda;
         try {
             [adminPda] = PublicKey.findProgramAddressSync(
                 [Buffer.from("admin"), userPubkey.toBuffer()],
                 program.programId
             );
             console.log("Admin PDA created:", adminPda.toString());
-
-            [platformStats] = PublicKey.findProgramAddressSync(
-                [Buffer.from("platform_stats")],
-                program.programId
-            );
-            console.log("Platform stats PDA created:", platformStats.toString());
-
-            [platformVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("platform_vault")],
-                program.programId
-            );
-            console.log("Platform vault PDA created:", platformVault.toString());
         } catch (e) {
             console.error("Failed to create PDAs:", e);
             return NextResponse.json({ error: "Failed to create program addresses" }, { status: 500 });
@@ -82,8 +70,8 @@ export async function POST(req: NextRequest) {
                 .initializePlatform()
                 .accountsStrict({
                     admin: userPubkey,
-                    platformStats,
-                    platformVault,
+                    platformStats: platformStats,
+                    platformVault: platformVault,
                     adminAccount: adminPda,
                     systemProgram: SystemProgram.programId,
                 })

@@ -1,7 +1,7 @@
 // app/api/platform/addAdmin/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-import { getProgram } from "@/lib/solana/program";
+import { getProgram, platformStats } from "@/lib/solana/program";
 
 export async function POST(req: NextRequest) {
     try {
@@ -19,11 +19,6 @@ export async function POST(req: NextRequest) {
 
         const [adminPda] = PublicKey.findProgramAddressSync(
             [Buffer.from("admin"), newAdminPubkey.toBuffer()],
-            program.programId
-        );
-
-        const [platformStats] = PublicKey.findProgramAddressSync(
-            [Buffer.from("platform_stats")],
             program.programId
         );
 

@@ -186,31 +186,24 @@ export default function CasinoGame() {
           }
 
           const data = await res.json();
-          console.log("API response:", data);
+          // console.log("API response:", data);
           
           if (data.error) throw new Error(data.error);
           if (!data.transaction) throw new Error("No transaction returned");
 
-          console.log("Deserializing and signing transaction...");
+          // console.log("Deserializing and signing transaction...");
           const txBuffer = Buffer.from(data.transaction, "base64");
           const tx = web3.Transaction.from(txBuffer);
 
           const signed = await signTransaction(tx);
-          console.log("Transaction signed, sending to network...");
+          // console.log("Transaction signed, sending to network...");
           
           const sig = await connection.sendRawTransaction(signed.serialize());
           console.log("Transaction sent with signature:", sig);
           
-          console.log("Confirming transaction...");
+          // console.log("Confirming transaction...");
           await connection.confirmTransaction(sig, "confirmed");
           console.log("Transaction confirmed!");
-
-          // Store the playerPda returned from the API if needed
-          if (data.playerPda) {
-              console.log("Player PDA:", data.playerPda);
-              // You might want to store this in state or context
-              // setPlayerPda(data.playerPda);
-          }
 
           toast.success("Player initialized successfully");
           

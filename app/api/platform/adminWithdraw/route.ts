@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-import { getProgram, platformVault } from "@/lib/solana/program";
+import { getProgram, platformStats, platformVault } from "@/lib/solana/program";
 import { BN } from "@coral-xyz/anchor";
 
 export async function POST(req: NextRequest) {
@@ -17,11 +17,18 @@ export async function POST(req: NextRequest) {
 
         const program = getProgram();
 
+        const [adminPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("admin"), adminPubkey.toBuffer()],
+            program.programId
+        );
+
         const ix = await program.methods
-            .adminDeposit(amountBN)
+            .adminWithdraw(amountBN)
             .accountsStrict({
                 admin: adminPubkey,
-                platformVault,
+                platformVault: platformVault,
+                platformStats: platformStats,
+                adminAccount: adminPda,
                 systemProgram: SystemProgram.programId,
             })
             .instruction();
@@ -34,11 +41,10 @@ export async function POST(req: NextRequest) {
         const serialized = tx.serialize({ requireAllSignatures: false });
 
         return NextResponse.json({
-            transaction: Buffer.from(serialized).toString("base64"),
-            platformVault: platformVault.toBase58(),
+            transaction: Buffer.from(serialized).toString("base64")
         });
     } catch (e: any) {
-        console.error("Admin deposit error:", e);
+        console.error("Admin withdraw error:", e);
         return NextResponse.json({
             error: "Internal Server Error",
             details: e.message,

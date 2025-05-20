@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
         let body;
         try {
             body = await req.json();
-            console.log("Request body parsed:", body);
+            // console.log("Request body parsed:", body);
         } catch (e) {
             console.error("Failed to parse request body:", e);
             return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
         let userPubkey;
         try {
             userPubkey = new PublicKey(body.publicKey);
-            console.log("User public key created:", userPubkey.toString());
         } catch (e) {
             console.error("Invalid public key format:", e);
             return NextResponse.json({ error: "Invalid public key format" }, { status: 400 });
@@ -38,13 +37,7 @@ export async function POST(req: NextRequest) {
 
         // Get program instance
         let program;
-        try {
-            program = getProgram();
-            console.log("Server program fetched, ID:", program?.programId.toString());
-        } catch (e: any) {
-            console.error("Failed to get program:", e);
-            return NextResponse.json({ error: "Failed to initialize Solana program", details: e.message }, { status: 500 });
-        }
+        program = getProgram();
 
         // Derive player PDA (NOTE: use correct seed here)
         let playerPda;
@@ -53,7 +46,7 @@ export async function POST(req: NextRequest) {
                 [Buffer.from("playerd"), userPubkey.toBuffer()], // or "playerd" if that’s your actual seed
                 program.programId
             );
-            console.log("Player PDA derived:", playerPda.toBase58());
+            // console.log("Player PDA derived:", playerPda.toBase58());
         } catch (e) {
             console.error("Failed to derive PDA:", e);
             return NextResponse.json({ error: "Failed to derive PDA" }, { status: 500 });
@@ -63,7 +56,7 @@ export async function POST(req: NextRequest) {
         let accountData;
         try {
             accountData = await program.account.player.fetch(playerPda);
-            console.log("Player account fetched:", accountData);
+            // console.log("Player account fetched:", accountData);
         } catch (e) {
             console.error("Failed to fetch player account:", e);
             return NextResponse.json({ error: "Failed to fetch player account" }, { status: 500 });
