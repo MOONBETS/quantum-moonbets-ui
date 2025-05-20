@@ -124,6 +124,7 @@ export default function CasinoGame() {
     
     try {
       const account = await getPlayerAccount(playerPda.toBase58());
+      console.log("account:", account)
 
       setStats(account);
       // console.log("Player stats:", account);
