@@ -246,113 +246,130 @@ export default function CasinoGame() {
   // Place a bet
   const placeBet = async () => {
     if (!publicKey || !signTransaction || !connection || !program) {
-        toast.error("Wallet not connected");
-        return;
+      toast.error("Wallet not connected");
+      return;
     }
 
     try {
-        setIsSpinning(true);
-        setShowResult(null);
+      setIsSpinning(true);
+      setShowResult(null);
 
-        console.log("Placing bet...");
+      console.log("Placing bet...");
 
-        const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
+      const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
-        const requestBody = {
-            publicKey: publicKey.toBase58(),
-            betAmount: betAmountLamports,
-            // betChoice: betChoice,
-            // clientSeed: clientSeed,
-        };
+      const requestBody = {
+        publicKey: publicKey.toBase58(),
+        betAmount: betAmountLamports,
+      };
 
-        const res = await fetch("/api/platform/playBet", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
-        }
-
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        if (!data.transaction) throw new Error("No transaction returned");
-
-        const playerPda = new PublicKey(data.playerPda);
-
-        let listener: number | null = null;
-        const eventPromise = new Promise<any>((resolve, reject) => {
-
-            listener = program.addEventListener("diceRolled", (event: any) => {
-                if (event.player.equals(playerPda)) {
-                    resolve(event);
-                    if (listener !== null) {
-                        program.removeEventListener(listener);
-                        listener = null;
-                    }
-                }
-            });
-
-            setTimeout(() => {
-                if (listener !== null) {
-                    program.removeEventListener(listener);
-                    listener = null;
-                }
-                reject(new Error("Timed out waiting for DiceRolled event"));
-            }, 70000);
-        });
-
-        console.log("Deserializing and signing transaction...");
-        const txBuffer = Buffer.from(data.transaction, "base64");
-        const tx = web3.Transaction.from(txBuffer);
-
-        const signed = await signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
-
-        console.log("Transaction sent with signature:", sig);
-        await connection.confirmTransaction(sig, "confirmed");
-
-        const eventResult = await eventPromise;
-
-        const result: "win" | "lose" = eventResult.won ? "win" : "lose";
-        setShowResult(result);
-
-        if (result === "win") {
-            setTimeout(() => {
-                confetti({
-                    particleCount: 100,
-                    spread: 200,
-                    origin: { y: 0.6 },
-                    colors: [
-                        "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
-                        "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
-                        "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
-                    ],
+      // Set up event listener before sending transaction
+       let listener: number | null = null;
+      const eventPromise = new Promise<any>((resolve, reject) => {
+        const playerPdaPromise = fetch("/api/platform/playBet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        })
+          .then(res => {
+            if (!res.ok) {
+              return res.json().catch(() => ({}))
+                .then(errorData => {
+                  throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
                 });
-            }, 500);
-        }
+            }
+            return res.json();
+          })
+          .then(data => {
+            if (data.error) throw new Error(data.error);
+            if (!data.transaction) throw new Error("No transaction returned");
+            return new PublicKey(data.playerPda);
+          });
 
-        // if (eventResult.won) {
-        //     toast.success(`You won! Dice rolled: ${eventResult.result}, Payout: ${eventResult.payout.toNumber() / LAMPORTS_PER_SOL} SOL`);
-        // } else {
-        //     toast.error(`You lost! Dice rolled: ${eventResult.result}`);
-        // }
+        playerPdaPromise.then(playerPda => {
+          listener = program.addEventListener("diceRolled", (event) => {
+            if (event.player.equals(playerPda)) {
+              resolve(event);
+              if (listener !== null) {
+                program.removeEventListener(listener);
+                listener = null;
+              }
+            }
+          });
+        });
 
-        await getStats();
-        await fetchWalletBalance?.();
+        // Reduced timeout to 15 seconds, which is still generous for Solana
+        setTimeout(() => {
+          if (listener !== null) {
+            program.removeEventListener(listener);
+            listener = null;
+          }
+          reject(new Error("Timed out waiting for DiceRolled event"));
+        }, 15000);
+      });
 
-        return eventResult;
+      // Process API response and send transaction in parallel with event listener setup
+      const res = await fetch("/api/platform/playBet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
 
-      } catch (err) {
-          console.error("Failed to place bet:", err);
-          toast.error(`Bet failed: ${(err as Error).message}`);
-          setErrorMessage?.("Failed to place bet: " + (err as Error).message);
-          throw err;
-      } finally {
-          setIsSpinning(false);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
       }
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (!data.transaction) throw new Error("No transaction returned");
+
+      console.log("Deserializing and signing transaction...");
+      const txBuffer = Buffer.from(data.transaction, "base64");
+      const tx = web3.Transaction.from(txBuffer);
+
+      const signed = await signTransaction(tx);
+      const sig = await connection.sendRawTransaction(signed.serialize());
+
+      console.log("Transaction sent with signature:", sig);
+      
+      // Use commitment 'processed' for faster confirmation
+      await connection.confirmTransaction(sig, "processed");
+
+      const eventResult = await eventPromise;
+
+      // const result = eventResult.won ? "win" : "lose";
+       const result: "win" | "lose" = eventResult.won ? "win" : "lose";
+      setShowResult(result);
+
+      if (result === "win") {
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            spread: 200,
+            origin: { y: 0.6 },
+            colors: [
+              "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
+              "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
+              "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
+            ],
+          });
+        }, 500);
+      }
+
+      await getStats();
+      await fetchWalletBalance?.();
+
+      return eventResult;
+
+    } catch (err) {
+      console.error("Failed to place bet:", err);
+      toast.error(`Bet failed: ${(err as Error).message}`);
+      setErrorMessage?.("Failed to place bet: " + (err as Error).message);
+      throw err;
+    } finally {
+      setIsSpinning(false);
+    }
   };
 
 
@@ -374,14 +391,14 @@ export default function CasinoGame() {
 
       const data = await res.json();
 
-      console.log("withdraw data:", data)
+      // console.log("withdraw data:", data)
 
       if (!res.ok) {
         throw new Error(data.error || "Withdraw request failed");
       }
 
       // 2. Decode and deserialize transaction
-      console.log("Deserializing and signing transaction...");
+      // console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
 

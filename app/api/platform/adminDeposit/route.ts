@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
             .adminDeposit(amountBN)
             .accountsStrict({
                 admin: adminPubkey,
-                platformVault,
+                platformVault: platformVault,
                 systemProgram: SystemProgram.programId,
             })
             .instruction();
@@ -34,8 +34,7 @@ export async function POST(req: NextRequest) {
         const serialized = tx.serialize({ requireAllSignatures: false });
 
         return NextResponse.json({
-            transaction: Buffer.from(serialized).toString("base64"),
-            platformVault: platformVault.toBase58(),
+            transaction: Buffer.from(serialized).toString("base64")
         });
     } catch (e: any) {
         console.error("Admin deposit error:", e);

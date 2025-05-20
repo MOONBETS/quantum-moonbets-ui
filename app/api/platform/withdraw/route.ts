@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         let userPubkey;
         try {
             userPubkey = new PublicKey(body.player);
-            console.log("User public key created:", userPubkey.toBase58());
+            // console.log("User public key created:", userPubkey.toBase58());
         } catch (e) {
             console.error("Invalid public key format:", e);
             return NextResponse.json({ error: "Invalid public key format" }, { status: 400 });

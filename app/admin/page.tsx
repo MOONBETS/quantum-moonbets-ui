@@ -155,14 +155,14 @@ export default function AdminPage() {
         return;
       }
 
-      const lamports = new BN(amount * LAMPORTS_PER_SOL);
+      const lamports = amount * LAMPORTS_PER_SOL;
 
       const res = await fetch("/api/platform/adminDeposit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           admin: publicKey.toBase58(),
-          amount: lamports,
+          amount: lamports.toString(),
         }),
       });
 
@@ -201,14 +201,14 @@ export default function AdminPage() {
         return;
       }
 
-      const lamports = new BN(amount * LAMPORTS_PER_SOL);
+      const lamports = amount * LAMPORTS_PER_SOL;
 
       const res = await fetch("/api/platform/adminWithdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           admin: publicKey.toBase58(),
-          amount: lamports,
+          amount: lamports.toString(),
         }),
       });
 
