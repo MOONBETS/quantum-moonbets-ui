@@ -40,6 +40,30 @@ export default function CasinoGame() {
   const programID = new web3.PublicKey(idl.address);
   const COMMITMENT = "confirmed";
 
+  const safeParseAmount = (value: any): number => {
+    if (!value) return 0;
+    
+    // Handle BN objects
+    if (typeof value.toNumber === 'function') {
+      return value.toNumber() / LAMPORTS_PER_SOL;
+    }
+    
+    // Handle string numbers
+    if (typeof value === 'string') {
+      // Remove leading zeros to avoid octal interpretation issues
+      const cleanValue = value.replace(/^0+/, '') || '0';
+      return parseInt(cleanValue, 10) / LAMPORTS_PER_SOL;
+    }
+    
+    // Handle plain numbers
+    if (typeof value === 'number') {
+      return value / LAMPORTS_PER_SOL;
+    }
+    
+    // Default fallback
+    return 0;
+  };
+  
   const getBalance = async (wallet: string) => {
     const res = await fetch(`/api/solana/balance?wallet=${wallet}`);
     const data = await res.json();
@@ -534,12 +558,12 @@ export default function CasinoGame() {
                   )}
 
                   {/* Withdraw button */}
-                  {connected && stats && stats.pendingWithdrawal && stats.pendingWithdrawal.toNumber() > 0 && (
+                  {connected && stats && safeParseAmount(stats.pendingWithdrawal) > 0 && (
                     <Button
                       onClick={withdrawWinnings}
                       className="mt-6 bg-green-600 hover:bg-green-700 text-white"
                     >
-                      Withdraw {(stats.pendingWithdrawal.toNumber() / LAMPORTS_PER_SOL).toFixed(4)} SOL
+                      Withdraw {safeParseAmount(stats.pendingWithdrawal).toFixed(4)} SOL
                     </Button>
                   )}
                 </div>

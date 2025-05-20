@@ -21,9 +21,6 @@ export default function AdminPage() {
   const [platformBalance, setPlatformBalance] = useState<number>(0);
   const [adminPubkeyInput, setAdminPubkeyInput] = useState("");
   
-  // Track whether we've already initialized
-  // const hasInitialized = useRef(false);
-
   const safeParseAmount = (value: any): number => {
     if (!value) return 0;
     
