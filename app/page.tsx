@@ -314,6 +314,7 @@ export default function CasinoGame() {
       // Use commitment 'processed' for faster confirmation
       await connection.confirmTransaction(sig, "processed");
       console.log("Transaction confirmed, waiting for DiceRolled event...");
+      toast.success("Bet Placed Successfully!")
 
       // Wait for the event
       const eventResult = await eventPromise;
