@@ -6,31 +6,29 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-import { getProgram } from "@/lib/solana/program";
+import { getProgram, platformStats, platformVault } from "@/lib/solana/program";
 
 export async function POST(req: NextRequest) {
     try {
-        console.log("Withdraw - request received");
-
         // Parse request body
         let body;
         try {
             body = await req.json();
-            console.log("Request body parsed:", body);
+            // console.log("Request body parsed:", body);
         } catch (e) {
             console.error("Failed to parse request body:", e);
             return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
         }
 
         // Validate public key
-        if (!body.publicKey) {
+        if (!body.player) {
             console.error("No public key provided in request");
             return NextResponse.json({ error: "Public key is required" }, { status: 400 });
         }
 
         let userPubkey;
         try {
-            userPubkey = new PublicKey(body.publicKey);
+            userPubkey = new PublicKey(body.player);
             console.log("User public key created:", userPubkey.toBase58());
         } catch (e) {
             console.error("Invalid public key format:", e);
@@ -41,32 +39,19 @@ export async function POST(req: NextRequest) {
         let program;
         try {
             program = getProgram();
-            console.log("Program initialized with ID:", program.programId.toBase58());
+            // console.log("Program initialized with ID:", program.programId.toBase58());
         } catch (e: any) {
             console.error("Failed to load program:", e);
             return NextResponse.json({ error: "Failed to load Solana program", details: e.message }, { status: 500 });
         }
 
         // Derive PDAs
-        let playerPda, platformVault, platformStats;
+        let playerPda;
         try {
             [playerPda] = PublicKey.findProgramAddressSync(
                 [Buffer.from("playerd"), userPubkey.toBuffer()],
                 program.programId
             );
-            [platformVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("platform_vault")],
-                program.programId
-            );
-            [platformStats] = PublicKey.findProgramAddressSync(
-                [Buffer.from("platform_stats")],
-                program.programId
-            );
-            console.log("Derived PDAs:", {
-                player: playerPda.toBase58(),
-                vault: platformVault.toBase58(),
-                stats: platformStats.toBase58(),
-            });
         } catch (e) {
             console.error("Failed to derive PDAs:", e);
             return NextResponse.json({ error: "Failed to derive program addresses" }, { status: 500 });
@@ -85,7 +70,6 @@ export async function POST(req: NextRequest) {
                     systemProgram: SystemProgram.programId,
                 })
                 .instruction();
-            console.log("Withdrawal instruction created");
         } catch (e) {
             console.error("Failed to create withdraw instruction:", e);
             return NextResponse.json({ error: "Failed to create instruction" }, { status: 500 });
@@ -98,7 +82,6 @@ export async function POST(req: NextRequest) {
             tx.feePayer = userPubkey;
             latestBlockhash = await program.provider.connection.getLatestBlockhash();
             tx.recentBlockhash = latestBlockhash.blockhash;
-            console.log("Transaction built and blockhash set");
         } catch (e) {
             console.error("Failed to build transaction:", e);
             return NextResponse.json({ error: "Failed to build transaction" }, { status: 500 });
@@ -108,7 +91,6 @@ export async function POST(req: NextRequest) {
         let serialized;
         try {
             serialized = tx.serialize({ requireAllSignatures: false });
-            console.log("Transaction serialized");
         } catch (e) {
             console.error("Failed to serialize transaction:", e);
             return NextResponse.json({ error: "Failed to serialize transaction" }, { status: 500 });

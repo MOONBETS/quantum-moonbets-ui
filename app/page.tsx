@@ -369,10 +369,12 @@ export default function CasinoGame() {
       const res = await fetch("/api/platform/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player }),
+        body: JSON.stringify({ player: player }),
       });
 
       const data = await res.json();
+
+      console.log("withdraw data:", data)
 
       if (!res.ok) {
         throw new Error(data.error || "Withdraw request failed");
@@ -578,6 +580,8 @@ export default function CasinoGame() {
               balance={balance}
               isSpinning={isSpinning}
               lastResults={lastResults}
+              pendingWithdrawal={safeParseAmount(stats?.pendingWithdrawal)}
+              onWithdraw={withdrawWinnings}
             />
           </div>
         </div>

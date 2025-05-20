@@ -9,7 +9,10 @@ type StatsProps = {
   isSpinning: boolean;
   balance: number;
   setBalance: Dispatch<SetStateAction<number>>;
+  pendingWithdrawal: number; // <== NEW
+  onWithdraw: () => void;    // <== NEW
 };
+
 
 export default function Stats({
   lastResults,
@@ -17,6 +20,8 @@ export default function Stats({
   isSpinning,
   balance,
   setBalance,
+  pendingWithdrawal,
+  onWithdraw
 }: StatsProps) {
   return (
     <div className="space-y-6 ">
@@ -82,11 +87,13 @@ export default function Stats({
         <CardContent className="p-6 space-y-3">
           <Button
             variant="outline"
-            className="w-full border-blue-300 text-blue-300 hover:bg-blue-500/20"
-            disabled={!walletConnected || balance <= 0 || isSpinning}
+            className="w-full border-green-400 text-green-300 hover:bg-green-600/20"
+            onClick={onWithdraw}
+            disabled={!walletConnected || pendingWithdrawal <= 0 || isSpinning}
           >
-            Withdraw
+            Withdraw {pendingWithdrawal.toFixed(4)} SOL
           </Button>
+
 
           <Button
             variant="outline"
