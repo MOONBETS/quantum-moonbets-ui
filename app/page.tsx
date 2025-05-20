@@ -291,6 +291,7 @@ export default function CasinoGame() {
       // Set up event listener before sending transaction
       const eventPromise = new Promise<any>((resolve, reject) => {
         listener = program.addEventListener("diceRolled", (event) => {
+          console.log("event bet...:", event);
           if (event.player.equals(publicKey)) {
             resolve(event);
             // Don't remove the listener yet - we'll do it in finally
@@ -309,7 +310,7 @@ export default function CasinoGame() {
           setIsSpinning(false);
           toast.error("Bet timed out waiting for result, but transaction may have gone through. Please check your balance.");
         }
-      }, 20000); // 20 seconds timeout AFTER transaction is sent
+      }, 30000); // 20 seconds timeout AFTER transaction is sent
       
       // Use commitment 'processed' for faster confirmation
       await connection.confirmTransaction(sig, "processed");
