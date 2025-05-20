@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SystemProgram, Transaction, PublicKey, SYSVAR_SLOT_HASHES_PUBKEY } from "@solana/web3.js";
-import { getProgram } from "@/lib/solana/program";
+import { getProgram, platformVault } from "@/lib/solana/program";
 import { BN } from "@coral-xyz/anchor";
 
 // Optional: Define types for better type safety
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Get program and PDAs
-        let program, playerPda, platformVault, programIdentityPubkey, oracleQueue, vrfProgramAddress;
+        let program, playerPda, programIdentityPubkey, oracleQueue, vrfProgramAddress;
         try {
             program = getProgram();
 
@@ -92,14 +92,6 @@ export async function POST(req: NextRequest) {
                 [Buffer.from("playerd"), userPubkey.toBuffer()],
                 program.programId
             );
-            // console.log("Player PDA:", playerPda.toString());
-
-            // Generate platform vault PDA
-            [platformVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("platform_vault")],
-                program.programId
-            );
-            // console.log("Platform vault PDA:", platformVault.toString());
 
             // Get program identity pubkey
             [programIdentityPubkey] = PublicKey.findProgramAddressSync(

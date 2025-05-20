@@ -558,16 +558,6 @@ export default function CasinoGame() {
                       <p className="mt-2 text-blue-300 text-sm">Connect your wallet to play</p>
                     </div>
                   )}
-
-                  {/* Withdraw button */}
-                  {connected && stats && safeParseAmount(stats.pendingWithdrawal) > 0 && (
-                    <Button
-                      onClick={withdrawWinnings}
-                      className="mt-6 bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Withdraw {safeParseAmount(stats.pendingWithdrawal).toFixed(4)} SOL
-                    </Button>
-                  )}
                 </div>
               </div>
             </CardContent>
