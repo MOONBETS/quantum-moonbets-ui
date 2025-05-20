@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         let accountData;
         try {
             accountData = await program.account.player.fetch(playerPda);
-            console.log("Player account fetched:", accountData);
+            // console.log("Player account fetched:", accountData);
         } catch (e) {
             console.error("Failed to fetch player account:", e);
             return NextResponse.json({ error: "Failed to fetch player account" }, { status: 500 });
