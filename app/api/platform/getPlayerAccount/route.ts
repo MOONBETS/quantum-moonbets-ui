@@ -22,14 +22,14 @@ export async function POST(req: NextRequest) {
         }
 
         // Validate public key
-        if (!body.publicKey) {
-            console.error("No public key provided in request");
+        if (!body.playerPda) {
+            console.error("No player pda provided in request");
             return NextResponse.json({ error: "Public key is required" }, { status: 400 });
         }
 
         let playerPda;
         try {
-            playerPda = new PublicKey(body.publicKey);
+            playerPda = new PublicKey(body.playerPda);
         } catch (e) {
             console.error("Invalid public key format:", e);
             return NextResponse.json({ error: "Invalid public key format" }, { status: 400 });
