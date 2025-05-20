@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Public key is required" }, { status: 400 });
         }
 
-        let userPubkey;
+        let playerPda;
         try {
-            userPubkey = new PublicKey(body.publicKey);
+            playerPda = new PublicKey(body.publicKey);
         } catch (e) {
             console.error("Invalid public key format:", e);
             return NextResponse.json({ error: "Invalid public key format" }, { status: 400 });
@@ -38,19 +38,6 @@ export async function POST(req: NextRequest) {
         // Get program instance
         let program;
         program = getProgram();
-
-        // Derive player PDA (NOTE: use correct seed here)
-        let playerPda;
-        try {
-            [playerPda] = PublicKey.findProgramAddressSync(
-                [Buffer.from("playerd"), userPubkey.toBuffer()], // or "playerd" if that’s your actual seed
-                program.programId
-            );
-            // console.log("Player PDA derived:", playerPda.toBase58());
-        } catch (e) {
-            console.error("Failed to derive PDA:", e);
-            return NextResponse.json({ error: "Failed to derive PDA" }, { status: 500 });
-        }
 
         // Fetch player account data
         let accountData;
@@ -64,7 +51,6 @@ export async function POST(req: NextRequest) {
 
         // Return player account info
         return NextResponse.json({
-            playerPda: playerPda.toBase58(),
             playerAccount: accountData,
         });
 

@@ -46,11 +46,11 @@ export default function CasinoGame() {
     return data.sol;
   };
 
-  const getPlayerAccount = async (wallet: string) => {
+  const getPlayerAccount = async (pda: string) => {
     const res = await fetch("/api/platform/getPlayerAccount", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ publicKey: wallet }),
+      body: JSON.stringify({ playerPda: pda }),
     });
 
     const data = await res.json();
