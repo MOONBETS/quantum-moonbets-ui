@@ -250,6 +250,8 @@ export default function CasinoGame() {
       return;
     }
 
+    let listener: number | null = null;
+    
     try {
       setIsSpinning(true);
       setShowResult(null);
@@ -263,52 +265,7 @@ export default function CasinoGame() {
         betAmount: betAmountLamports,
       };
 
-      // Set up event listener before sending transaction
-       let listener: number | null = null;
-      const eventPromise = new Promise<any>((resolve, reject) => {
-        const playerPdaPromise = fetch("/api/platform/playBet", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        })
-          .then(res => {
-            if (!res.ok) {
-              return res.json().catch(() => ({}))
-                .then(errorData => {
-                  throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
-                });
-            }
-            return res.json();
-          })
-          .then(data => {
-            if (data.error) throw new Error(data.error);
-            if (!data.transaction) throw new Error("No transaction returned");
-            return new PublicKey(data.playerPda);
-          });
-
-        playerPdaPromise.then(playerPda => {
-          listener = program.addEventListener("diceRolled", (event) => {
-            if (event.player.equals(playerPda)) {
-              resolve(event);
-              if (listener !== null) {
-                program.removeEventListener(listener);
-                listener = null;
-              }
-            }
-          });
-        });
-
-        // Reduced timeout to 15 seconds, which is still generous for Solana
-        setTimeout(() => {
-          if (listener !== null) {
-            program.removeEventListener(listener);
-            listener = null;
-          }
-          reject(new Error("Timed out waiting for DiceRolled event"));
-        }, 15000);
-      });
-
-      // Process API response and send transaction in parallel with event listener setup
+      // First get the transaction details
       const res = await fetch("/api/platform/playBet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -324,22 +281,50 @@ export default function CasinoGame() {
       if (data.error) throw new Error(data.error);
       if (!data.transaction) throw new Error("No transaction returned");
 
-      console.log("Deserializing and signing transaction...");
+      const playerPda = new PublicKey(data.playerPda);
+
+      // Set up event listener before sending transaction
+      const eventPromise = new Promise<any>((resolve, reject) => {
+        listener = program.addEventListener("diceRolled", (event) => {
+          if (event.player.equals(playerPda)) {
+            resolve(event);
+            // Don't remove the listener yet - we'll do it in finally
+          }
+        });
+      });
+
+      // console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
 
+      // This might take time as user needs to approve the transaction
       const signed = await signTransaction(tx);
-      const sig = await connection.sendRawTransaction(signed.serialize());
+      
+      // Only NOW start the timeout clock - AFTER user signs
+      const timeoutId = setTimeout(() => {
+        if (listener !== null) {
+          program.removeEventListener(listener);
+          listener = null;
+          setIsSpinning(false);
+          toast.error("Bet timed out waiting for result, but transaction may have gone through. Please check your balance.");
+        }
+      }, 20000); // 30 seconds timeout AFTER transaction is sent
 
-      console.log("Transaction sent with signature:", sig);
+      const sig = await connection.sendRawTransaction(signed.serialize());
+      // console.log("Transaction sent with signature:", sig);
       
       // Use commitment 'processed' for faster confirmation
       await connection.confirmTransaction(sig, "processed");
+      console.log("Transaction confirmed, waiting for DiceRolled event...");
 
+      // Wait for the event
       const eventResult = await eventPromise;
+      
+      // Clear the timeout as we got the event
+      clearTimeout(timeoutId);
 
       // const result = eventResult.won ? "win" : "lose";
-       const result: "win" | "lose" = eventResult.won ? "win" : "lose";
+      const result: "win" | "lose" = eventResult.won ? "win" : "lose";
       setShowResult(result);
 
       if (result === "win") {
@@ -368,10 +353,18 @@ export default function CasinoGame() {
       setErrorMessage?.("Failed to place bet: " + (err as Error).message);
       throw err;
     } finally {
+      // Clean up event listener if it exists
+      if (listener !== null) {
+        try {
+          program.removeEventListener(listener);
+        } catch (e) {
+          console.error("Error removing event listener:", e);
+        }
+        listener = null;
+      }
       setIsSpinning(false);
     }
   };
-
 
   // Withdraw winnings
   const withdrawWinnings = async () => {
