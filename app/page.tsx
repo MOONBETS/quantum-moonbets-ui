@@ -402,17 +402,16 @@ export default function CasinoGame() {
             currentBet: player.currentBet,
           });
 
-          // Check if a bet has been resolved
-          const hasBetResolved = player.currentBet === 0 && (
-            player.wins !== oldPlayer.wins ||
-            player.losses !== oldPlayer.losses
-          );
+          const hasBetResolved =
+            player.currentBet === 0 &&
+            (player.wins !== oldPlayer.wins ||
+              player.losses !== oldPlayer.losses);
 
           if (hasBetResolved) {
             const won = player.wins > oldPlayer.wins;
             const result: DiceRolledEvent = {
               player: playerPda,
-              result: won ? 1 : 0, // custom logic if needed
+              result: won ? 1 : 0,
               won,
               payout: player.pendingWithdrawal,
             };
@@ -426,18 +425,36 @@ export default function CasinoGame() {
           }
         } catch (error) {
           console.error("Error polling player account:", error);
+          // Continue to next polling interval
         }
 
         await new Promise((res) => setTimeout(res, interval));
       }
 
       console.warn("Polling timed out without detecting a result.");
-      return null;
+
+      // Return loss result if timeout happens
+      return {
+        player: playerPda,
+        result: 0,
+        won: false,
+        payout: BN(0),
+      };
     } catch (err) {
       console.error("Failed to poll result:", err);
-      return null;
+      if (playerPda) {
+        return {
+          player: playerPda,
+          result: 0,
+          won: false,
+          payout: BN(0),
+        };
+      } else {
+        return null;
+      }
     }
   };
+
 
   // Withdraw winnings
   const withdrawWinnings = async () => {
