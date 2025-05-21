@@ -3,12 +3,15 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 const steps = [
-  "🎉 Bet placed successfully!",
-  "✨ Hang tight... Fetching randomness from Magicblock...",
-  "🔮 Contacting the dice spirits...",
-  "🧙‍♂️ Brewing your result...",
-  "🎲 Rolling the dice...",
-  "🚀 Almost there..."
+  "🎉 Your bet has been sealed in the Book of Fate.",
+  "✨ Channeling the cosmic energies through Magicblock...",
+  "🔮 Whispering to the ancient dice spirits...",
+  "🧙‍♂️ A wizard begins to brew your fortune...",
+  "🔥 The cauldron bubbles... fate starts to take shape...",
+  "🎲 The sacred dice are cast into the ether...",
+  "🌌 Time slows... the outcome dances beyond the veil...",
+  "🧙 The oracle peers into the result...",
+  "🏆 Will glory find you, or will you journey to Valhalla?"
 ];
 
 interface BetProgressOverlayProps {
