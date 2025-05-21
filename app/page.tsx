@@ -147,14 +147,18 @@ export default function CasinoGame() {
 
   // Third useEffect - Fetch stats when playerPda changes
   useEffect(() => {
-    if (playerPda && publicKey) {
-      try {
-        // This ensures we fetch stats whenever the player PDA changes (when switching accounts)
-        getStats();
-      } catch(err){
-        console.log("Error in third hook:", err);
+    const fetchStats = async () => {
+      if (playerPda && publicKey) {
+        try {
+          await getStats(); // <-- Await this async function
+        } catch (err) {
+          await initializePlayer()
+          console.log("Error in third hook:", err);
+        }
       }
-    }
+    };
+
+    fetchStats(); // Call the inner async function
   }, [playerPda, publicKey]);
 
   // Fetch wallet SOL balance
@@ -209,7 +213,7 @@ export default function CasinoGame() {
       return account;
     } catch (e) {
       console.error("Failed to fetch stats:", e);
-      initializePlayer();
+      throw e;
     }
   };
 
