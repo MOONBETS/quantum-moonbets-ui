@@ -100,10 +100,17 @@ export default function CasinoGame() {
   };
 
 
-  // Set up program when wallet is connected
   useEffect(() => {
-    if (!publicKey) return;
+    if (!publicKey || !signTransaction || !signAllTransactions) {
+      // Reset everything if wallet is disconnected
+      setProgram(null);
+      setPlayerPda(null);
+      setStats(null);
+      setBalance(0);
+      return;
+    }
 
+    // Reinitialize everything with the new wallet
     const provider = new AnchorProvider(
       connection,
       { publicKey, signTransaction, signAllTransactions } as any,
@@ -113,17 +120,30 @@ export default function CasinoGame() {
     setProgram(prog);
 
     (async () => {
-      const [playerPda] = web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("playerd"), publicKey.toBytes()],
-        programID
-      );
-      setPlayerPda(playerPda);
-    })();
+      try {
+        const [playerPda] = web3.PublicKey.findProgramAddressSync(
+          [Buffer.from("playerd"), publicKey.toBytes()],
+          programID
+        );
+        setPlayerPda(playerPda);
 
-    // Fetch wallet balance
-    fetchWalletBalance();
-    checkPlayerAccount();
-  }, [connection, publicKey, connected]);
+        // Only now fetch balance and stats
+        const balance = await getBalance(publicKey.toBase58());
+        setBalance(balance);
+
+        try {
+          const stats = await getPlayerAccount(playerPda.toBase58());
+          setStats(stats);
+          // Optionally generate lastResults here too if needed
+        } catch (e) {
+          console.log("Initializing new player...");
+          await initializePlayer(); // You can call this if needed
+        }
+      } catch (err) {
+        console.error("Error initializing wallet state:", err);
+      }
+    })();
+  }, [connection, publicKey, signTransaction, signAllTransactions]);
 
   // Fetch wallet SOL balance
   const fetchWalletBalance = async () => {
@@ -134,18 +154,6 @@ export default function CasinoGame() {
     } catch (e) {
       console.error("Failed to fetch balance:", e);
       setErrorMessage("Failed to fetch wallet balance");
-    }
-  };
-
-  // Check if player account exists
-  const checkPlayerAccount = async () => {
-    if (!program || !playerPda) return;
-    
-    try {
-      await getStats();
-    } catch (e) {
-      console.log("Player account doesn't exist, needs initialization:", e);
-      await initializePlayer()
     }
   };
 
