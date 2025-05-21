@@ -95,14 +95,14 @@ export default function Stats({
           </Button>
 
 
-          <Button
+          {/* <Button
             variant="outline"
             className="w-full border-blue-500 text-blue-400 hover:bg-blue-500/20"
             onClick={() => walletConnected && setBalance(1.0)}
             disabled={!walletConnected || isSpinning}
           >
             Reset Balance
-          </Button>
+          </Button> */}
         </CardContent>
       </Card>
     </div>

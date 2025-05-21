@@ -18,7 +18,6 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Program, BN, web3 } from "@coral-xyz/anchor";
 import idl from "./moonbets.json";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { TransactionService } from "./services/transactions";
 import { MoonbetsProgram } from "./types/program";
 import { Player } from "./types/accounts";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
@@ -41,7 +40,6 @@ export default function CasinoGame() {
   const [showBetProgress, setShowBetProgress] = useState(false);
 
 
-  const programID = new web3.PublicKey(idl.address);
   const COMMITMENT = "confirmed";
 
   const safeParseAmount = (value: any): number => {
@@ -113,16 +111,6 @@ export default function CasinoGame() {
     const prog = new Program(idl, provider) as unknown as MoonbetsProgram;
     setProgram(prog);
 
-    (async () => {
-      const [playerPda] = web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("playerd"), publicKey.toBytes()],
-        programID
-      );
-      setPlayerPda(playerPda);
-    })();
-
-    // Fetch wallet balance
-    fetchWalletBalance();
   }, [connection, publicKey, connected]);
 
   // Set up transaction service
@@ -266,7 +254,7 @@ export default function CasinoGame() {
       setIsSpinning(true);
       setShowResult(null);
 
-      console.log("Placing bet...");
+      // console.log("Placing bet...");
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
       const requestBody = {
@@ -293,9 +281,8 @@ export default function CasinoGame() {
       if (!data.transaction) throw new Error("No transaction returned");
 
       const oldPlayer = data.oldPlayer;
-      console.log("Old player state:", oldPlayer);
+      // console.log("Old player state:", oldPlayer);
 
-      console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
 
