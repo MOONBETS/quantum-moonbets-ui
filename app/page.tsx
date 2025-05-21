@@ -108,9 +108,16 @@ export default function CasinoGame() {
       { publicKey, signTransaction, signAllTransactions } as any,
       { commitment: COMMITMENT }
     );
+
     const prog = new Program(idl, provider) as unknown as MoonbetsProgram;
     setProgram(prog);
 
+    // Generate player PDA
+    const [playerPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("playerd"), publicKey.toBuffer()],
+        prog.programId
+    );
+    setPlayerPda(playerPda);
   }, [connection, publicKey, connected]);
 
   // Set up transaction service
