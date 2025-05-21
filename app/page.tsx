@@ -275,11 +275,6 @@ export default function CasinoGame() {
             resolve(event);
           }
         });
-
-        // Optional: add a timeout to prevent hanging
-        setTimeout(() => {
-          reject(new Error("Timed out waiting for DiceRolled event"));
-        }, 30000); // 30 seconds
       });
 
       const requestBody = {
