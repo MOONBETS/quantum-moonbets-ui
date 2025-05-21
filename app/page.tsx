@@ -433,7 +433,7 @@ export default function CasinoGame() {
         setTimeout(() => {
           console.log("Global timeout for waitForBetResult");
           resolve(null);
-        }, 40000); // 40 seconds global timeout
+        }, 60000); // 40 seconds global timeout
       });
 
       const result = await Promise.race([
