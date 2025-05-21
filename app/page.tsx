@@ -165,7 +165,7 @@ export default function CasinoGame() {
         const results: Array<"win" | "lose"> = [];
         
         // Add the most recent results first (we'll assume wins are most recent if both exist)
-        const totalGames = Math.min(wins + losses, 10);
+        const totalGames = wins + losses;
         let remainingWins = wins;
         let remainingLosses = losses;
         
