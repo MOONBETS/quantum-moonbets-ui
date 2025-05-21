@@ -46,6 +46,7 @@ export default function CasinoGame() {
     
     // Handle BN objects
     if (typeof value.toNumber === 'function') {
+      console.log("value.toNumber() / LAMPORTS_PER_SOL:", value.toNumber() / LAMPORTS_PER_SOL)
       return value.toNumber() / LAMPORTS_PER_SOL;
     }
     
@@ -53,11 +54,13 @@ export default function CasinoGame() {
     if (typeof value === 'string') {
       // Remove leading zeros to avoid octal interpretation issues
       const cleanValue = value.replace(/^0+/, '') || '0';
+      console.log("parseInt(cleanValue, 10):", parseInt(cleanValue, 10) / LAMPORTS_PER_SOL)
       return parseInt(cleanValue, 10) / LAMPORTS_PER_SOL;
     }
     
     // Handle plain numbers
     if (typeof value === 'number') {
+      console.log("value / LAMPORTS_PER_SOL:", value / LAMPORTS_PER_SOL)
       return value / LAMPORTS_PER_SOL;
     }
     
@@ -363,7 +366,7 @@ export default function CasinoGame() {
     listener: number | null
   ): Promise<DiceRolledEvent | null> => {
     try {
-      const timeoutMs = 60000; // 60s safety timeout
+      const timeoutMs = 70000; // 60s safety timeout
       const timeoutPromise = new Promise<null>((resolve) =>
         setTimeout(() => {
           console.log("Global timeout for waitForBetResult");
