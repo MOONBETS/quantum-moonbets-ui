@@ -43,30 +43,35 @@ export default function CasinoGame() {
 
   const safeParseAmount = (value: any): number => {
     if (!value) return 0;
-    
+
     // Handle BN objects
     if (typeof value.toNumber === 'function') {
-      console.log("value.toNumber() / LAMPORTS_PER_SOL:", value.toNumber() / LAMPORTS_PER_SOL)
       return value.toNumber() / LAMPORTS_PER_SOL;
     }
-    
+
     // Handle string numbers
     if (typeof value === 'string') {
-      // Remove leading zeros to avoid octal interpretation issues
-      const cleanValue = value.replace(/^0+/, '') || '0';
-      console.log("parseInt(cleanValue, 10):", parseInt(cleanValue, 10) / LAMPORTS_PER_SOL)
-      return parseInt(cleanValue, 10) / LAMPORTS_PER_SOL;
+      let parsed = 0;
+
+      // Detect hexadecimal (contains letters a-f or starts with 0x)
+      if (/^[0-9a-f]+$/i.test(value)) {
+        parsed = parseInt(value, 16);
+      } else {
+        parsed = parseInt(value, 10);
+      }
+
+      return parsed / LAMPORTS_PER_SOL;
     }
-    
+
     // Handle plain numbers
     if (typeof value === 'number') {
-      console.log("value / LAMPORTS_PER_SOL:", value / LAMPORTS_PER_SOL)
       return value / LAMPORTS_PER_SOL;
     }
-    
+
     // Default fallback
     return 0;
   };
+
   
   const getBalance = async (wallet: string) => {
     const res = await fetch(`/api/solana/balance?wallet=${wallet}`);
