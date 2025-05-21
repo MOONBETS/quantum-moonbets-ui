@@ -256,14 +256,13 @@ export default function CasinoGame() {
       setShowResult(null);
 
       console.log("Placing bet...");
-      let listener: number | null = null;
 
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
       // Setup event listener
+      let listener: number | null = null;
       const eventPromise = new Promise<DiceRolledEvent>((resolve, reject) => {
         listener = program.addEventListener("diceRolled", (event: DiceRolledEvent) => {
-          console.log(event)
           if (event.player.equals(playerPda)) {
             console.log("DiceRolled event detected:", {
               player: event.player.toBase58(),
@@ -273,9 +272,22 @@ export default function CasinoGame() {
             });
             resolve(event);
 
+            // Remove the listener
+            if (listener !== null) {
+              program.removeEventListener(listener);
+              listener = null;
+            }
           }
         });
 
+        // Optional: add a timeout to prevent hanging
+        setTimeout(() => {
+          if (listener !== null) {
+            program.removeEventListener(listener);
+            listener = null;
+          }
+          reject(new Error("Timed out waiting for DiceRolled event"));
+        }, 30000); // 30 seconds
       });
 
       const requestBody = {
