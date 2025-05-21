@@ -23,6 +23,7 @@ import { Player } from "./types/accounts";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { toast } from "react-hot-toast";
 import { DiceRolledEvent } from "./types/events";
+import SuccessModal from "@/components/ui/SuccessModal";
 
 export default function CasinoGame() {
   const [betAmount, setBetAmount] = useState(0.01);
@@ -38,6 +39,8 @@ export default function CasinoGame() {
   const [stats, setStats] = useState<Player | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showBetProgress, setShowBetProgress] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
 
   const programID = new web3.PublicKey(idl.address);
@@ -226,7 +229,8 @@ export default function CasinoGame() {
       }
 
       try {
-          console.log("Initializing player...");
+          setSuccessMessage("Hang on, getting you set!");
+          setShowSuccess(true);
           
           const res = await fetch("/api/platform/initializePlayer", {
               method: "POST",
@@ -255,19 +259,21 @@ export default function CasinoGame() {
           // console.log("Transaction signed, sending to network...");
           
           const sig = await connection.sendRawTransaction(signed.serialize());
-          console.log("Transaction sent with signature:", sig);
+          // console.log("Transaction sent with signature:", sig);
           
           // console.log("Confirming transaction...");
           await connection.confirmTransaction(sig, "confirmed");
-          console.log("Transaction confirmed!");
+          // console.log("Transaction confirmed!");
 
-          toast.success("Player initialized successfully");
+          // toast.success("Player initialized successfully");
+          setSuccessMessage("You're set!");
+          setShowSuccess(true);
           
           // Return the player PDA in case the caller needs it
           return data.playerPda;
       } catch (err: any) {
           console.error("Failed to initialize player:", err);
-          toast.error(`Player initialization failed: ${err.message}`);
+          // toast.error(`Player initialization failed: ${err.message}`);
           throw err;
       }
   };
@@ -283,7 +289,7 @@ export default function CasinoGame() {
       setIsSpinning(true);
       setShowResult(null);
 
-      console.log("Placing bet...");
+      // console.log("Placing bet...");
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
       const requestBody = {
@@ -518,6 +524,11 @@ export default function CasinoGame() {
         {/* In your top-level layout or component */}
         {showBetProgress && <BetProgressOverlay visible />}
 
+        <SuccessModal
+          visible={showSuccess}
+          message={successMessage}
+          onClose={() => setShowSuccess(false)}
+        />
 
         <div className="grid md:grid-cols-3 gap-y-8 md:gap-8">
           <Card className="lg:col-span-2 bg-black/40 border-blue-500/30 backdrop-blur-sm overflow-hidden">
