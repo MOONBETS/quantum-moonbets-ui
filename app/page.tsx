@@ -122,14 +122,8 @@ export default function CasinoGame() {
 
     // Fetch wallet balance
     fetchWalletBalance();
-  }, [connection, publicKey, connected]);
-
-  // Set up transaction service
-  useEffect(() => {
-    if (!program || !playerPda || !publicKey) return;
-
     checkPlayerAccount();
-  }, [program, playerPda, publicKey]);
+  }, [connection, publicKey, connected]);
 
   // Fetch wallet SOL balance
   const fetchWalletBalance = async () => {
@@ -414,9 +408,6 @@ export default function CasinoGame() {
       return null;
     }
   };
-
-
-
 
   // Withdraw winnings
   const withdrawWinnings = async () => {
