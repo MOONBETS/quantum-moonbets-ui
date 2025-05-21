@@ -22,6 +22,7 @@ import { MoonbetsProgram } from "./types/program";
 import { Player } from "./types/accounts";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { toast } from "react-hot-toast";
+import { DiceRolledEvent } from "./types/events";
 
 export default function CasinoGame() {
   const [betAmount, setBetAmount] = useState(0.01);
@@ -245,30 +246,36 @@ export default function CasinoGame() {
 
   // Place a bet
   const placeBet = async () => {
-    if (!publicKey || !signTransaction || !connection || !program) {
+    if (!publicKey || !signTransaction || !connection || !program || !playerPda) {
       toast.error("Wallet not connected");
       return;
     }
 
-    let listener: number | null = null;
-    
     try {
       setIsSpinning(true);
       setShowResult(null);
 
       console.log("Placing bet...");
+      let listener: number | null = null;
 
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
-      // Set up event listener before sending transaction
-      const eventPromise = new Promise<any>((resolve, reject) => {
-        listener = program.addEventListener("diceRolled", (event) => {
-          console.log("event bet...:", event);
-          if (event.player.equals(publicKey)) {
+      // Setup event listener
+      const eventPromise = new Promise<DiceRolledEvent>((resolve, reject) => {
+        listener = program.addEventListener("diceRolled", (event: DiceRolledEvent) => {
+          console.log(event)
+          if (event.player.equals(playerPda)) {
+            console.log("DiceRolled event detected:", {
+              player: event.player.toBase58(),
+              result: event.result,
+              won: event.won,
+              payout: event.payout.toString()
+            });
             resolve(event);
-            // Don't remove the listener yet - we'll do it in finally
+
           }
         });
+
       });
 
       const requestBody = {
@@ -353,15 +360,6 @@ export default function CasinoGame() {
       setErrorMessage?.("Failed to place bet: " + (err as Error).message);
       throw err;
     } finally {
-      // Clean up event listener if it exists
-      if (listener !== null) {
-        try {
-          program.removeEventListener(listener);
-        } catch (e) {
-          console.error("Error removing event listener:", e);
-        }
-        listener = null;
-      }
       setIsSpinning(false);
     }
   };
