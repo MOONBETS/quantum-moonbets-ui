@@ -93,16 +93,6 @@ export default function Stats({
           >
             Withdraw {pendingWithdrawal.toFixed(4)} SOL
           </Button>
-
-
-          {/* <Button
-            variant="outline"
-            className="w-full border-blue-500 text-blue-400 hover:bg-blue-500/20"
-            onClick={() => walletConnected && setBalance(1.0)}
-            disabled={!walletConnected || isSpinning}
-          >
-            Reset Balance
-          </Button> */}
         </CardContent>
       </Card>
     </div>

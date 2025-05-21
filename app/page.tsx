@@ -132,8 +132,7 @@ export default function CasinoGame() {
         setBalance(balance);
 
         try {
-          const stats = await getPlayerAccount(playerPda.toBase58());
-          setStats(stats);
+          getStats();
           // Optionally generate lastResults here too if needed
         } catch (e) {
           console.log("Initializing new player...");
