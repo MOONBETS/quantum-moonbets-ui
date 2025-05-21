@@ -116,6 +116,9 @@ export async function POST(req: NextRequest) {
             }, { status: 500 });
         }
 
+        // Get player account before bet
+        const playerBefore = await program.account.player.fetch(playerPda);
+
         // Create the instruction
         let ix;
         try {
@@ -159,9 +162,7 @@ export async function POST(req: NextRequest) {
         // Return response with transaction and parameters
         return NextResponse.json({
             transaction: Buffer.from(serialized).toString('base64'),
-            playerPda: playerPda.toString(),
-            betChoice: betChoice,
-            betAmount: betAmount.toString(),
+            oldPlayer: playerBefore
         });
     } catch (e: any) {
         console.error("Play bet failed with error:", e);
