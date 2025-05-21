@@ -251,10 +251,10 @@ export default function CasinoGame() {
       return;
     }
 
-    setIsSpinning(true);
-    setShowResult(null);
-
     try {
+      setIsSpinning(true);
+      setShowResult(null);
+
       console.log("Placing bet...");
 
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
@@ -263,8 +263,8 @@ export default function CasinoGame() {
       let listener = null;
       const eventPromise = new Promise<DiceRolledEvent>((resolve, reject) => {
         listener = program.addEventListener("diceRolled", (event) => {
-          console.log("Raw event received:", event);
-
+          console.log("Raw event received:", event); // Debug log all events
+          
           if (event.player && event.player.equals(playerPda)) {
             console.log("DiceRolled event detected for current player:", {
               player: event.player.toBase58(),
@@ -282,6 +282,7 @@ export default function CasinoGame() {
         betAmount: betAmountLamports,
       };
 
+      // Get the transaction details
       const res = await fetch("/api/platform/playBet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,22 +299,30 @@ export default function CasinoGame() {
       if (!data.transaction) throw new Error("No transaction returned");
       if (!data.oldPlayer) throw new Error("No oldPlayer returned");
 
-      const oldPlayer = data.oldPlayer;
+      // First get the player account data before placing the bet
+      const oldPlayer = data?.oldPlayer;
       console.log("Old player state:", oldPlayer);
 
+      console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
 
+      // Sign the transaction
       const signed = await signTransaction(tx);
+
+      // Send the transaction
       const sig = await connection.sendRawTransaction(signed.serialize());
       console.log("Transaction sent with signature:", sig);
 
       toast.success("Bet Placed Successfully!");
+      
+      // Use commitment 'confirmed' for better reliability
       await connection.confirmTransaction(sig, "confirmed");
       console.log("Transaction confirmed, waiting for DiceRolled event...");
 
+      // Start polling and use both event and polling to detect result
       const resultData = await waitForBetResult(oldPlayer, eventPromise, listener);
-
+      
       if (resultData) {
         const result: "win" | "lose" = resultData.won ? "win" : "lose";
         setShowResult(result);
@@ -330,14 +339,8 @@ export default function CasinoGame() {
                 "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
               ],
             });
-
-            setIsSpinning(false); // Stop after confetti
           }, 500);
-        } else {
-          setIsSpinning(false); // Loss = stop immediately
         }
-      } else {
-        setIsSpinning(false); // No result = stop
       }
 
       await getStats();
@@ -349,11 +352,11 @@ export default function CasinoGame() {
       console.error("Failed to place bet:", err);
       toast.error(`Bet failed: ${(err as Error).message}`);
       setErrorMessage?.("Failed to place bet: " + (err as Error).message);
-      setIsSpinning(false); // Stop spinner on error
       throw err;
+    } finally {
+      setIsSpinning(false);
     }
   };
-
 
   /**
    * Wait for the result of a bet using both event listener and polling
