@@ -100,6 +100,7 @@ export default function CasinoGame() {
   };
 
 
+  // First useEffect - Initialize program when wallet changes
   useEffect(() => {
     if (!publicKey || !signTransaction || !signAllTransactions) {
       // Reset everything if wallet is disconnected
@@ -110,7 +111,7 @@ export default function CasinoGame() {
       return;
     }
 
-    // Reinitialize everything with the new wallet
+    // Reinitialize program with the new wallet
     const provider = new AnchorProvider(
       connection,
       { publicKey, signTransaction, signAllTransactions } as any,
@@ -119,30 +120,43 @@ export default function CasinoGame() {
     const prog = new Program(idl, provider) as unknown as MoonbetsProgram;
     setProgram(prog);
 
-    (async () => {
-      try {
-        const [playerPda] = web3.PublicKey.findProgramAddressSync(
-          [Buffer.from("playerd"), publicKey.toBytes()],
-          programID
-        );
-        setPlayerPda(playerPda);
+    // Calculate and set player PDA
+    const [playerPda] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("playerd"), publicKey.toBytes()],
+      programID
+    );
+    setPlayerPda(playerPda);
 
-        // Only now fetch balance and stats
-        const balance = await getBalance(publicKey.toBase58());
-        setBalance(balance);
-
-        try {
-          getStats();
-          // Optionally generate lastResults here too if needed
-        } catch (e) {
-          console.log("Initializing new player...");
-          await initializePlayer(); // You can call this if needed
-        }
-      } catch (err) {
-        console.error("Error initializing wallet state:", err);
-      }
-    })();
   }, [connection, publicKey, signTransaction, signAllTransactions]);
+
+  // Second useEffect - Fetch balance when wallet changes
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (publicKey) {
+        try {
+          const balance = await getBalance(publicKey.toBase58());
+          setBalance(balance);
+        } catch (err) {
+          console.error("Error fetching balance:", err);
+        }
+      }
+    };
+
+    fetchBalance();
+  }, [publicKey]);
+
+  // Third useEffect - Fetch stats when playerPda changes
+  useEffect(() => {
+    if (playerPda && publicKey) {
+      try {
+        // This ensures we fetch stats whenever the player PDA changes (when switching accounts)
+        getStats();
+      } catch(err){
+        initializePlayer();
+        console.log("Error in third hook:", err);
+      }
+    }
+  }, [playerPda, publicKey]);
 
   // Fetch wallet SOL balance
   const fetchWalletBalance = async () => {
