@@ -260,6 +260,17 @@ export default function CasinoGame() {
 
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
+      // Set up event listener before sending transaction
+      const eventPromise = new Promise<any>((resolve, reject) => {
+        listener = program.addEventListener("diceRolled", (event) => {
+          console.log("event bet...:", event);
+          if (event.player.equals(publicKey)) {
+            resolve(event);
+            // Don't remove the listener yet - we'll do it in finally
+          }
+        });
+      });
+
       const requestBody = {
         publicKey: publicKey.toBase58(),
         betAmount: betAmountLamports,
@@ -287,17 +298,6 @@ export default function CasinoGame() {
 
       // This might take time as user needs to approve the transaction
       const signed = await signTransaction(tx);
-
-      // Set up event listener before sending transaction
-      const eventPromise = new Promise<any>((resolve, reject) => {
-        listener = program.addEventListener("diceRolled", (event) => {
-          console.log("event bet...:", event);
-          if (event.player.equals(publicKey)) {
-            resolve(event);
-            // Don't remove the listener yet - we'll do it in finally
-          }
-        });
-      });
 
       const sig = await connection.sendRawTransaction(signed.serialize());
       // console.log("Transaction sent with signature:", sig);
