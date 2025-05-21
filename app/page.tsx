@@ -152,7 +152,6 @@ export default function CasinoGame() {
         // This ensures we fetch stats whenever the player PDA changes (when switching accounts)
         getStats();
       } catch(err){
-        initializePlayer();
         console.log("Error in third hook:", err);
       }
     }
@@ -210,7 +209,7 @@ export default function CasinoGame() {
       return account;
     } catch (e) {
       console.error("Failed to fetch stats:", e);
-      throw e;
+      initializePlayer();
     }
   };
 
