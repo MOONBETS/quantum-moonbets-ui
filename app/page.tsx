@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import BetProgressOverlay from "@/components/ui/BetProgressOverlay";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { RotateCcw, Coins } from "lucide-react";
@@ -37,6 +38,8 @@ export default function CasinoGame() {
   const [playerPda, setPlayerPda] = useState<PublicKey | null>(null);
   const [stats, setStats] = useState<Player | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showBetProgress, setShowBetProgress] = useState(false);
+
 
   const programID = new web3.PublicKey(idl.address);
   const COMMITMENT = "confirmed";
@@ -300,7 +303,7 @@ export default function CasinoGame() {
       const sig = await connection.sendRawTransaction(signed.serialize());
 
       console.log("Transaction sent with signature:", sig);
-      toast.success("Bet placed successfully! Waiting for result...");
+      setShowBetProgress(true); // SHOW animated overlay here
 
       await connection.confirmTransaction(sig, "confirmed");
       console.log("Transaction confirmed. Polling for result...");
@@ -332,8 +335,12 @@ export default function CasinoGame() {
       await getStats();
       await fetchWalletBalance?.();
 
+      // Right before return or error
+      setShowBetProgress(false);
       return resultData;
     } catch (err) {
+      // Right before return or error
+      setShowBetProgress(false);
       console.error("Failed to place bet:", err);
       toast.error(`Bet failed: ${(err as Error).message}`);
       setErrorMessage?.("Failed to place bet: " + (err as Error).message);
@@ -493,6 +500,10 @@ export default function CasinoGame() {
             {errorMessage}
           </div>
         )}
+
+        {/* In your top-level layout or component */}
+        {showBetProgress && <BetProgressOverlay visible />}
+
 
         <div className="grid md:grid-cols-3 gap-y-8 md:gap-8">
           <Card className="lg:col-span-2 bg-black/40 border-blue-500/30 backdrop-blur-sm overflow-hidden">
