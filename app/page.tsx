@@ -260,17 +260,16 @@ export default function CasinoGame() {
       const betAmountLamports = betAmount * LAMPORTS_PER_SOL;
 
       // Setup event listener
-      let listener = null;
-      const eventPromise = new Promise<DiceRolledEvent>((resolve, reject) => {
+      let listener: number | null = null;
+      const eventPromise = new Promise<DiceRolledEvent>((resolve) => {
         listener = program.addEventListener("diceRolled", (event) => {
-          console.log("Raw event received:", event); // Debug log all events
-          
+          console.log("Raw event received:", event);
           if (event.player && event.player.equals(playerPda)) {
             console.log("DiceRolled event detected for current player:", {
               player: event.player.toBase58(),
               result: event.result,
               won: event.won,
-              payout: event.payout.toString()
+              payout: event.payout.toString(),
             });
             resolve(event);
           }
@@ -282,7 +281,6 @@ export default function CasinoGame() {
         betAmount: betAmountLamports,
       };
 
-      // Get the transaction details
       const res = await fetch("/api/platform/playBet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -291,38 +289,31 @@ export default function CasinoGame() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
+        throw new Error(
+          `HTTP error! Status: ${res.status}. ${errorData.error || ""} ${errorData.details || ""}`
+        );
       }
 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (!data.transaction) throw new Error("No transaction returned");
-      if (!data.oldPlayer) throw new Error("No oldPlayer returned");
-
-      // First get the player account data before placing the bet
-      const oldPlayer = data?.oldPlayer;
-      console.log("Old player state:", oldPlayer);
 
       console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
 
-      // Sign the transaction
       const signed = await signTransaction(tx);
-
-      // Send the transaction
       const sig = await connection.sendRawTransaction(signed.serialize());
-      console.log("Transaction sent with signature:", sig);
 
+      console.log("Transaction sent with signature:", sig);
       toast.success("Bet Placed Successfully!");
-      
-      // Use commitment 'confirmed' for better reliability
+
       await connection.confirmTransaction(sig, "confirmed");
       console.log("Transaction confirmed, waiting for DiceRolled event...");
 
-      // Start polling and use both event and polling to detect result
-      const resultData = await waitForBetResult(oldPlayer, eventPromise, listener);
-      
+      // Wait for the event result
+      const resultData = await waitForBetResult(eventPromise, listener);
+
       if (resultData) {
         const result: "win" | "lose" = resultData.won ? "win" : "lose";
         setShowResult(result);
@@ -341,6 +332,8 @@ export default function CasinoGame() {
             });
           }, 500);
         }
+      } else {
+        toast.error("Bet result timeout. Please check your balance.");
       }
 
       await getStats();
@@ -358,6 +351,7 @@ export default function CasinoGame() {
     }
   };
 
+
   /**
    * Wait for the result of a bet using both event listener and polling
    * @param oldPlayer Previous player state
@@ -365,87 +359,31 @@ export default function CasinoGame() {
    * @param listener Event listener ID
    */
   const waitForBetResult = async (
-    oldPlayer: any,
     eventPromise: Promise<DiceRolledEvent>,
     listener: number | null
   ): Promise<DiceRolledEvent | null> => {
     try {
-      if (!publicKey || !connection || !program || !playerPda) {
-        toast.error("Wallet not connected");
-        return null;
-      }
-
-      // Setup polling to check player state changes
-      const pollPromise = new Promise<DiceRolledEvent | null>(async (resolve) => {
-        const maxWaitTime = 30000;
-        const start = Date.now();
-        while (Date.now() - start < maxWaitTime) {
-          try {
-            const player = await getPlayerAccount(playerPda.toBase58());
-            console.log("Polling player stats...", {
-              lastResult: player.lastResult,
-              lastBetAmount: player.lastBetAmount.toString(),
-              currentBet: player.currentBet.toString()
-            });
-
-            
-            // Check if a bet has been resolved
-            const hasBetResolved = player.currentBet === 0 && (
-              player.wins !== oldPlayer.wins ||
-              player.losses !== oldPlayer.losses
-            );
-
-            if (hasBetResolved) {
-              const won = player.wins > oldPlayer.wins;
-              const result: DiceRolledEvent = {
-                player: playerPda,
-                result: won ? 1 : 0, // or some other indicator, based on your logic
-                won,
-                payout: player.pendingWithdrawal
-              };
-
-              console.log("Result found via polling:", {
-                won,
-                payout: result.payout.toString()
-              });
-
-              resolve(result);
-              return;
-            }
-          } catch (error) {
-            console.error("Error polling player account:", error);
-          }
-          
-          await new Promise(res => setTimeout(res, 2000)); // Poll every 2 seconds
-        }
-        
-        // If we timeout, resolve with null
-        resolve(null);
-      });
-
-      // Race between the event listener and polling
-      const timeoutPromise = new Promise<null>((resolve) => {
+      const timeoutMs = 60000; // 60s safety timeout
+      const timeoutPromise = new Promise<null>((resolve) =>
         setTimeout(() => {
           console.log("Global timeout for waitForBetResult");
           resolve(null);
-        }, 60000); // 40 seconds global timeout
-      });
+        }, timeoutMs)
+      );
 
       const result = await Promise.race([
-        eventPromise.catch(err => {
+        eventPromise.catch((err) => {
           console.error("Event promise error:", err);
           return null;
         }),
-        pollPromise,
-        timeoutPromise
+        timeoutPromise,
       ]);
 
       return result;
     } catch (err) {
-      console.error("Failed to get result:", err);
+      console.error("Failed in waitForBetResult:", err);
       return null;
     } finally {
-      // Always clean up the event listener
       if (listener !== null && program) {
         console.log("Removing event listener");
         try {
@@ -456,6 +394,7 @@ export default function CasinoGame() {
       }
     }
   };
+
 
 
   // Withdraw winnings
