@@ -23,7 +23,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://t.me/MOONBETS_CASINO"
+              href="https://t.me/MoonBets_CASINO"
               target="_blank"
               className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors"
               aria-label="Join our Telegram"
@@ -32,7 +32,7 @@ export default function Footer() {
               <span className="text-sm">Join Telegram</span>
             </a>
             <a
-              href="#"
+              href="https://Guide.moonbets.casino"
               className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors"
               aria-label="Follow us on Twitter/X"
             >
@@ -41,7 +41,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="#"
+              href="https://guide.moonbets.casino/getting-started/quickstart-1"
               className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors"
               aria-label="Join our Telegram"
             >
