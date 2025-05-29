@@ -10,9 +10,8 @@ type StatsProps = {
   balance: number;
   setBalance: Dispatch<SetStateAction<number>>;
   pendingWithdrawal: number; // <== NEW
-  onWithdraw: () => void;    // <== NEW
+  onWithdraw: () => void; // <== NEW
 };
-
 
 export default function Stats({
   lastResults,
@@ -21,7 +20,7 @@ export default function Stats({
   balance,
   setBalance,
   pendingWithdrawal,
-  onWithdraw
+  onWithdraw,
 }: StatsProps) {
   return (
     <div className="space-y-6 ">
@@ -94,6 +93,7 @@ export default function Stats({
             Withdraw {pendingWithdrawal.toFixed(4)} SOL
           </Button>
         </CardContent>
+        
       </Card>
     </div>
   );

@@ -14,6 +14,7 @@ import Footer from "@/components/footer";
 import Header from "@/components/header";
 import Particles from "@/components/particles";
 import Stats from "@/components/bets-stats";
+
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Program, BN, web3 } from "@coral-xyz/anchor";
 import idl from "./moonbets.json";
@@ -42,7 +43,6 @@ export default function CasinoGame() {
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
-
   const programID = new web3.PublicKey(idl.address);
   const COMMITMENT = "confirmed";
 
@@ -50,12 +50,12 @@ export default function CasinoGame() {
     if (!value) return 0;
 
     // Handle BN objects
-    if (typeof value.toNumber === 'function') {
+    if (typeof value.toNumber === "function") {
       return value.toNumber() / LAMPORTS_PER_SOL;
     }
 
     // Handle string numbers
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       let parsed = 0;
 
       // Detect hexadecimal (contains letters a-f or starts with 0x)
@@ -69,7 +69,7 @@ export default function CasinoGame() {
     }
 
     // Handle plain numbers
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       return value / LAMPORTS_PER_SOL;
     }
 
@@ -77,7 +77,6 @@ export default function CasinoGame() {
     return 0;
   };
 
-  
   const getBalance = async (wallet: string) => {
     const res = await fetch(`/api/solana/balance?wallet=${wallet}`);
     const data = await res.json();
@@ -101,7 +100,6 @@ export default function CasinoGame() {
 
     return data.playerAccount as Player; // Contains playerPda and playerAccount
   };
-
 
   // First useEffect - Initialize program when wallet changes
   useEffect(() => {
@@ -129,7 +127,6 @@ export default function CasinoGame() {
       programID
     );
     setPlayerPda(playerPda);
-
   }, [connection, publicKey, signTransaction, signAllTransactions]);
 
   // Second useEffect - Fetch balance when wallet changes
@@ -155,7 +152,7 @@ export default function CasinoGame() {
         try {
           await getStats(); // <-- Await this async function
         } catch (err) {
-          await initializePlayer()
+          await initializePlayer();
           console.log("Error in third hook:", err);
         }
       }
@@ -179,29 +176,32 @@ export default function CasinoGame() {
   // Get player stats from the program
   const getStats = async () => {
     if (!program || !playerPda) return;
-    
+
     try {
       const account = await getPlayerAccount(playerPda.toBase58());
       // console.log("account:", account)
 
       setStats(account);
       // console.log("Player stats:", account);
-      
+
       /// Generate last results based on wins and losses count
       if (account.wins !== undefined && account.losses !== undefined) {
         const wins = parseInt(account.wins.toString());
         const losses = parseInt(account.losses.toString());
-        
+
         // Create an array with the most recent 10 results (assuming wins are more recent)
         const results: Array<"win" | "lose"> = [];
-        
+
         // Add the most recent results first (we'll assume wins are most recent if both exist)
         const totalGames = wins + losses;
         let remainingWins = wins;
         let remainingLosses = losses;
-        
+
         for (let i = 0; i < totalGames; i++) {
-          if (remainingWins > 0 && (remainingWins >= remainingLosses || remainingLosses === 0)) {
+          if (
+            remainingWins > 0 &&
+            (remainingWins >= remainingLosses || remainingLosses === 0)
+          ) {
             results.push("win");
             remainingWins--;
           } else if (remainingLosses > 0) {
@@ -209,10 +209,10 @@ export default function CasinoGame() {
             remainingLosses--;
           }
         }
-        
+
         setLastResults(results);
       }
-      
+
       return account;
     } catch (e) {
       console.error("Failed to fetch stats:", e);
@@ -223,64 +223,74 @@ export default function CasinoGame() {
   // Client-side implementation for reference
   // Use this in your React component
   const initializePlayer = async () => {
-      if (!publicKey || !signTransaction) {
-          toast.error("Wallet not connected");
-          return;
+    if (!publicKey || !signTransaction) {
+      toast.error("Wallet not connected");
+      return;
+    }
+
+    try {
+      setSuccessMessage("Hang on, getting you set!");
+      setShowSuccess(true);
+
+      const res = await fetch("/api/platform/initializePlayer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicKey: publicKey.toBase58() }),
+      });
+
+      // Handle HTTP errors
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Server response:", errorData);
+        throw new Error(
+          `HTTP error! Status: ${res.status}. ${errorData.error || ""} ${
+            errorData.details || ""
+          }`
+        );
       }
 
-      try {
-          setSuccessMessage("Hang on, getting you set!");
-          setShowSuccess(true);
-          
-          const res = await fetch("/api/platform/initializePlayer", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ publicKey: publicKey.toBase58() }),
-          });
+      const data = await res.json();
+      // console.log("API response:", data);
 
-          // Handle HTTP errors
-          if (!res.ok) {
-              const errorData = await res.json().catch(() => ({}));
-              console.error("Server response:", errorData);
-              throw new Error(`HTTP error! Status: ${res.status}. ${errorData.error || ''} ${errorData.details || ''}`);
-          }
+      if (data.error) throw new Error(data.error);
+      if (!data.transaction) throw new Error("No transaction returned");
 
-          const data = await res.json();
-          // console.log("API response:", data);
-          
-          if (data.error) throw new Error(data.error);
-          if (!data.transaction) throw new Error("No transaction returned");
+      // console.log("Deserializing and signing transaction...");
+      const txBuffer = Buffer.from(data.transaction, "base64");
+      const tx = web3.Transaction.from(txBuffer);
 
-          // console.log("Deserializing and signing transaction...");
-          const txBuffer = Buffer.from(data.transaction, "base64");
-          const tx = web3.Transaction.from(txBuffer);
+      const signed = await signTransaction(tx);
+      // console.log("Transaction signed, sending to network...");
 
-          const signed = await signTransaction(tx);
-          // console.log("Transaction signed, sending to network...");
-          
-          const sig = await connection.sendRawTransaction(signed.serialize());
-          // console.log("Transaction sent with signature:", sig);
-          
-          // console.log("Confirming transaction...");
-          await connection.confirmTransaction(sig, "confirmed");
-          // console.log("Transaction confirmed!");
+      const sig = await connection.sendRawTransaction(signed.serialize());
+      // console.log("Transaction sent with signature:", sig);
 
-          // toast.success("Player initialized successfully");
-          setSuccessMessage("You're set!");
-          setShowSuccess(true);
-          
-          // Return the player PDA in case the caller needs it
-          return data.playerPda;
-      } catch (err: any) {
-          console.error("Failed to initialize player:", err);
-          // toast.error(`Player initialization failed: ${err.message}`);
-          throw err;
-      }
+      // console.log("Confirming transaction...");
+      await connection.confirmTransaction(sig, "confirmed");
+      // console.log("Transaction confirmed!");
+
+      // toast.success("Player initialized successfully");
+      setSuccessMessage("You're set!");
+      setShowSuccess(true);
+
+      // Return the player PDA in case the caller needs it
+      return data.playerPda;
+    } catch (err: any) {
+      console.error("Failed to initialize player:", err);
+      // toast.error(`Player initialization failed: ${err.message}`);
+      throw err;
+    }
   };
 
   // Place a bet
   const placeBet = async () => {
-    if (!publicKey || !signTransaction || !connection || !program || !playerPda) {
+    if (
+      !publicKey ||
+      !signTransaction ||
+      !connection ||
+      !program ||
+      !playerPda
+    ) {
       toast.error("Wallet not connected");
       return;
     }
@@ -307,7 +317,9 @@ export default function CasinoGame() {
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(
-          `HTTP error! Status: ${res.status}. ${errorData.error || ""} ${errorData.details || ""}`
+          `HTTP error! Status: ${res.status}. ${errorData.error || ""} ${
+            errorData.details || ""
+          }`
         );
       }
 
@@ -344,9 +356,22 @@ export default function CasinoGame() {
               spread: 200,
               origin: { y: 0.6 },
               colors: [
-                "#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5",
-                "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4CAF50",
-                "#8BC34A", "#CDDC39", "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
+                "#f44336",
+                "#e91e63",
+                "#9c27b0",
+                "#673ab7",
+                "#3f51b5",
+                "#2196f3",
+                "#03a9f4",
+                "#00bcd4",
+                "#009688",
+                "#4CAF50",
+                "#8BC34A",
+                "#CDDC39",
+                "#FFEB3B",
+                "#FFC107",
+                "#FF9800",
+                "#FF5722",
               ],
             });
           }, 500);
@@ -372,7 +397,6 @@ export default function CasinoGame() {
       setIsSpinning(false);
     }
   };
-
 
   /**
    * Wait for the result of a bet using both event listener and polling
@@ -455,16 +479,15 @@ export default function CasinoGame() {
     }
   };
 
-
   // Withdraw winnings
   const withdrawWinnings = async () => {
     try {
       if (!publicKey || !signTransaction || !connection || !program) {
-          toast.error("Wallet not connected");
-          return;
+        toast.error("Wallet not connected");
+        return;
       }
 
-      const player = publicKey.toBase58()
+      const player = publicKey.toBase58();
 
       const res = await fetch("/api/platform/withdraw", {
         method: "POST",
@@ -501,7 +524,6 @@ export default function CasinoGame() {
     }
   };
 
-
   // Reset error message after 5 seconds
   useEffect(() => {
     if (errorMessage) {
@@ -517,7 +539,8 @@ export default function CasinoGame() {
   // console.log("betAmount:", betAmount);
   // console.log("balance:", balance);
   // Check if betting is allowed
-  const canBet = connected && !isSpinning && betAmount > 0 && betAmount <= balance;
+  const canBet =
+    connected && !isSpinning && betAmount > 0 && betAmount <= balance;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] to-[#1a1a3a] text-white overflow-hidden relative flex flex-col">
@@ -525,11 +548,7 @@ export default function CasinoGame() {
       <MoonBackground />
 
       <div className="container mx-auto px-4 py-6 relative z-10 h-full flex-grow">
-        <Header
-          setLastResults={setLastResults}
-          setShowResult={setShowResult}
-        />
-
+        <Header setLastResults={setLastResults} setShowResult={setShowResult} />
 
         {/* Error message display */}
         {errorMessage && (
@@ -619,7 +638,11 @@ export default function CasinoGame() {
                       disabled={!canBet}
                       className={`
                         w-28 h-28 rounded-full text-3xl font-bold shadow-lg transition-all duration-300 relative overflow-hidden z-10
-                        ${canBet ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500' : 'bg-gray-700'}
+                        ${
+                          canBet
+                            ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500"
+                            : "bg-gray-700"
+                        }
                       `}
                     >
                       {isSpinning ? (
@@ -664,13 +687,23 @@ export default function CasinoGame() {
                   {!connected && (
                     <div className="mt-6 text-center">
                       <WalletMultiButton className="bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white py-2 px-4 rounded-md" />
-                      <p className="mt-2 text-blue-300 text-sm">Connect your wallet to play</p>
+                      <p className="mt-2 text-blue-300 text-sm">
+                        Connect your wallet to play
+                      </p>
                     </div>
                   )}
+                  <p className="text-gray-400 text-center mt-10 text-sm">
+                    #MOONBETS NATIVE TOKEN CA:
+                    <br />
+                    <span className="text-wrap">
+                      AqV6x8nSXujXXo7GY1uaZTQgaVNXEQkhSHK4yubKitQK
+                    </span>
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
           <div className="col-span-1">
             {/* Stats card */}
             <Stats
@@ -684,6 +717,7 @@ export default function CasinoGame() {
             />
           </div>
         </div>
+
         <Particles />
       </div>
 
