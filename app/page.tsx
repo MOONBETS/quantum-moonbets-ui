@@ -153,7 +153,7 @@ export default function CasinoGame() {
           await getStats(); // <-- Await this async function
         } catch (err) {
           await initializePlayer();
-          console.log("Error in third hook:", err);
+          console.error("Error in third hook:", err);
         }
       }
     };
@@ -328,7 +328,6 @@ export default function CasinoGame() {
       if (!data.transaction) throw new Error("No transaction returned");
 
       const oldPlayer = data.oldPlayer;
-      console.log("Old player state:", oldPlayer);
 
       console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
@@ -420,11 +419,11 @@ export default function CasinoGame() {
       while (Date.now() - start < maxWaitTime) {
         try {
           const player = await getPlayerAccount(playerPda.toBase58());
-          console.log("Polling player stats...", {
-            wins: player.wins,
-            losses: player.losses,
-            currentBet: player.currentBet,
-          });
+          // console.log("Polling player stats...", {
+          //   wins: player.wins,
+          //   losses: player.losses,
+          //   currentBet: player.currentBet,
+          // });
 
           const hasBetResolved =
             player.currentBet === 0 &&
@@ -445,6 +444,8 @@ export default function CasinoGame() {
               payout: result.payout.toString(),
             });
 
+            setBetAmount(0.01); // Reset bet amount on error
+
             return result;
           }
         } catch (error) {
@@ -455,8 +456,8 @@ export default function CasinoGame() {
         await new Promise((res) => setTimeout(res, interval));
       }
 
-      console.warn("Polling timed out without detecting a result.");
-
+      // console.warn("Polling timed out without detecting a result.");
+      setBetAmount(0.01); // Reset bet amount on error
       // Return loss result if timeout happens
       return {
         player: playerPda,
@@ -466,6 +467,7 @@ export default function CasinoGame() {
       };
     } catch (err) {
       console.error("Failed to poll result:", err);
+      setBetAmount(0.01); // Reset bet amount on error
       if (playerPda) {
         return {
           player: playerPda,
@@ -474,6 +476,7 @@ export default function CasinoGame() {
           payout: BN(0),
         };
       } else {
+        setBetAmount(0.01); // Reset bet amount on error
         return null;
       }
     }
