@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-import { getProgram, platformVault } from "@/lib/solana/program";
+import { getProgram, platformStats, platformVault } from "@/lib/solana/program";
 import { BN } from "@coral-xyz/anchor";
 
 export async function POST(req: NextRequest) {
@@ -24,11 +24,10 @@ export async function POST(req: NextRequest) {
 
         const ix = await program.methods
             .adminDeposit(amountBN)
-            .accountsStrict({
+            .accountsPartial({
                 admin: adminPubkey,
                 platformVault: platformVault,
-                // @ts-ignore
-                platformStats: program.account.platformStats,
+                platformStats: platformStats,
                 adminAccount: adminPda,
                 systemProgram: SystemProgram.programId,
             })
