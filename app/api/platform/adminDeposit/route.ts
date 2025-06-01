@@ -17,11 +17,19 @@ export async function POST(req: NextRequest) {
 
         const program = getProgram();
 
+        const [adminPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("admin"), adminPubkey.toBuffer()],
+                    program.programId
+                );
+
         const ix = await program.methods
             .adminDeposit(amountBN)
             .accountsStrict({
                 admin: adminPubkey,
                 platformVault: platformVault,
+                // @ts-ignore
+                platformStats: program.account.platformStats,
+                adminAccount: adminPda,
                 systemProgram: SystemProgram.programId,
             })
             .instruction();
