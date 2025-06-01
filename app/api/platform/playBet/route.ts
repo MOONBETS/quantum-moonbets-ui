@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SystemProgram, Transaction, PublicKey, SYSVAR_SLOT_HASHES_PUBKEY } from "@solana/web3.js";
-import { getProgram, platformVault } from "@/lib/solana/program";
+import { getProgram, platformStats, platformVault } from "@/lib/solana/program";
 import { BN } from "@coral-xyz/anchor";
 
 // Optional: Define types for better type safety
@@ -124,15 +124,12 @@ export async function POST(req: NextRequest) {
         try {
             ix = await program.methods
                 .play(betChoice, betAmount, clientSeed)
-                .accountsStrict({
+                .accountsPartial({
                     payer: userPubkey,
                     player: playerPda,
                     platformVault: platformVault,
-                    oracleQueue: oracleQueue,
-                    programIdentity: programIdentityPubkey,
-                    slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
-                    vrfProgram: vrfProgramAddress,
-                    systemProgram: SystemProgram.programId,
+                    platformStats: platformStats,
+                    // systemProgram: SystemProgram.programId,
                 })
                 .instruction();
 

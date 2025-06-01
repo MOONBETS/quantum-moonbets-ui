@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SystemProgram, Transaction, PublicKey } from "@solana/web3.js";
-import { getProgram } from "@/lib/solana/program";
+import { getProgram, platformVault, platformStats } from "@/lib/solana/program";
 
 export async function POST(req: NextRequest) {
     try {
@@ -54,9 +54,10 @@ export async function POST(req: NextRequest) {
         try {
             ix = await program.methods
                 .initializePlayer()
-                .accountsStrict({
+                .accountsPartial({
                     payer: userPubkey,
                     player: playerPda,
+                    platformStats: platformStats,
                     systemProgram: SystemProgram.programId,
                 })
                 .instruction();
