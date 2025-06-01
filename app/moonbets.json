@@ -1,5 +1,5 @@
 {
-  "address": "2zdSF8zfWrpaNEFTnpSPwbHmuGfFpY7jsSoRYeKeDetf",
+  "address": "EcfXxkWLJZsQdGcePRAufm9Q9MMAkQaFd4AMWCKCq6KY",
   "metadata": {
     "name": "moonbets",
     "version": "0.1.0",
@@ -130,6 +130,37 @@
           }
         },
         {
+          "name": "platform_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin_account",
+          "optional": true
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -244,12 +275,43 @@
       "accounts": [
         {
           "name": "vrf_program_identity",
+          "docs": [
+            "This check ensure that the vrf_program_identity (which is a PDA) is a singer",
+            "enforcing the callback is executed by the VRF program trough CPI"
+          ],
           "signer": true,
           "address": "9irBy75QS2BN81FUgXuHcjqceJJRuc9oDkAe8TKVvvAw"
         },
         {
           "name": "player",
           "writable": true
+        },
+        {
+          "name": "platform_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              }
+            ]
+          }
         }
       ],
       "args": [
@@ -408,6 +470,33 @@
           }
         },
         {
+          "name": "platform_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -484,8 +573,40 @@
           }
         },
         {
+          "name": "platform_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "oracle_queue",
-          "writable": true
+          "writable": true,
+          "address": "Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         },
         {
           "name": "program_identity",
@@ -508,16 +629,12 @@
           }
         },
         {
-          "name": "slot_hashes",
-          "address": "SysvarS1otHashes111111111111111111111111111"
-        },
-        {
           "name": "vrf_program",
           "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
         }
       ],
       "args": [
@@ -532,6 +649,43 @@
         {
           "name": "client_seed",
           "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "process_undelegation",
+      "discriminator": [
+        196,
+        28,
+        41,
+        206,
+        48,
+        37,
+        51,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "base_account",
+          "writable": true
+        },
+        {
+          "name": "buffer"
+        },
+        {
+          "name": "payer",
+          "writable": true
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "account_seeds",
+          "type": {
+            "vec": "bytes"
+          }
         }
       ]
     },
@@ -586,6 +740,66 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_platform_limit",
+      "discriminator": [
+        105,
+        216,
+        249,
+        68,
+        246,
+        250,
+        214,
+        173
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "platform_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin_account",
+          "optional": true
+        }
+      ],
+      "args": [
+        {
+          "name": "field",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "withdraw",
@@ -747,6 +961,19 @@
       ]
     },
     {
+      "name": "AdminDeposited",
+      "discriminator": [
+        179,
+        88,
+        176,
+        235,
+        167,
+        5,
+        42,
+        9
+      ]
+    },
+    {
       "name": "AdminRemoved",
       "discriminator": [
         59,
@@ -760,16 +987,16 @@
       ]
     },
     {
-      "name": "AdminWithdrawal",
+      "name": "AdminWithdrawn",
       "discriminator": [
-        252,
-        57,
-        105,
-        143,
-        6,
-        137,
-        231,
-        33
+        12,
+        67,
+        18,
+        232,
+        19,
+        82,
+        237,
+        212
       ]
     },
     {
@@ -783,6 +1010,58 @@
         210,
         24,
         250
+      ]
+    },
+    {
+      "name": "PlatformInitialized",
+      "discriminator": [
+        16,
+        222,
+        212,
+        5,
+        213,
+        140,
+        112,
+        162
+      ]
+    },
+    {
+      "name": "PlatformLimitUpdated",
+      "discriminator": [
+        8,
+        254,
+        198,
+        113,
+        12,
+        94,
+        133,
+        91
+      ]
+    },
+    {
+      "name": "PlayerInitialized",
+      "discriminator": [
+        214,
+        37,
+        153,
+        142,
+        63,
+        109,
+        206,
+        15
+      ]
+    },
+    {
+      "name": "PlayerWithdrawal",
+      "discriminator": [
+        156,
+        217,
+        238,
+        4,
+        144,
+        93,
+        128,
+        57
       ]
     }
   ],
@@ -826,6 +1105,36 @@
       "code": 6007,
       "name": "CannotRemovePrimaryAdmin",
       "msg": "Cannot remove primary admin"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidField",
+      "msg": "Invalid field name provided"
+    },
+    {
+      "code": 6009,
+      "name": "InsufficientVaultBalance",
+      "msg": "Insufficient vault balance"
+    },
+    {
+      "code": 6010,
+      "name": "PlatformNotInitialized",
+      "msg": "Platform not initialized"
+    },
+    {
+      "code": 6011,
+      "name": "PlayerNotFound",
+      "msg": "Player account not found"
+    },
+    {
+      "code": 6012,
+      "name": "AdminAlreadyExists",
+      "msg": "Admin already exists"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
     }
   ],
   "types": [
@@ -857,6 +1166,30 @@
           {
             "name": "added_by",
             "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AdminDeposited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -873,18 +1206,42 @@
           {
             "name": "removed_by",
             "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
     },
     {
-      "name": "AdminWithdrawal",
+      "name": "AdminWithdrawn",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "admin",
             "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DailyWithdrawal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "date",
+            "type": "i64"
           },
           {
             "name": "amount",
@@ -903,6 +1260,10 @@
             "type": "pubkey"
           },
           {
+            "name": "user_choice",
+            "type": "u8"
+          },
+          {
             "name": "result",
             "type": "u8"
           },
@@ -913,6 +1274,54 @@
           {
             "name": "payout",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlatformInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlatformLimitUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "field",
+            "type": "string"
+          },
+          {
+            "name": "old_value",
+            "type": "u64"
+          },
+          {
+            "name": "new_value",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -941,6 +1350,46 @@
           {
             "name": "admin_count",
             "type": "u8"
+          },
+          {
+            "name": "total_bets",
+            "type": "u64"
+          },
+          {
+            "name": "total_volume",
+            "type": "u64"
+          },
+          {
+            "name": "total_users",
+            "type": "u64"
+          },
+          {
+            "name": "daily_withdrawal",
+            "type": {
+              "defined": {
+                "name": "DailyWithdrawal"
+              }
+            }
+          },
+          {
+            "name": "total_profit",
+            "type": "u64"
+          },
+          {
+            "name": "total_owed",
+            "type": "u64"
+          },
+          {
+            "name": "current_active_users",
+            "type": "u64"
+          },
+          {
+            "name": "max_bet_lamports",
+            "type": "u64"
+          },
+          {
+            "name": "daily_withdraw_limit",
+            "type": "u64"
           }
         ]
       }
@@ -977,6 +1426,42 @@
           {
             "name": "total_games",
             "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerWithdrawal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
