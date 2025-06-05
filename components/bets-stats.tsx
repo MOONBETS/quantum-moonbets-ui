@@ -25,63 +25,63 @@ export default function Stats({
 }: StatsProps) {
 	return (
 		<div className="space-y-6 ">
-			<Card className="bg-transparent border-none">
-				<CardContent className="p-6 border-none">
-					<h2 className="text-xl font-bold mb-4 gap-2 flex items-center text-[#7db0ef]">
-						{/* <Rocket className="w-5 h-5 mr-2" /> */}
-						<Image src="/rocket.webp" width={35} height={35} alt="icon" />
-						Game Stats
-					</h2>
+			{/* <Card className="bg-transparent border-none"> */}
+			<div className="p-6 border-none">
+				<h2 className="text-xl font-bold mb-4 gap-2 flex items-center text-[#7db0ef]">
+					{/* <Rocket className="w-5 h-5 mr-2" /> */}
+					<Image src="/rocket.webp" width={35} height={35} alt="icon" />
+					Game Stats
+				</h2>
 
-					<div className="grid grid-cols-2 gap-4">
-						<div className="">
-							<div className="text-sm text-gray-400">Moon/Crash</div>
-							<div className="text-xl font-bold">
-								<span className="text-green-400">
-									{lastResults.filter((r) => r === "win").length}
-								</span>
-								/
-								<span className="text-red-400">
-									{lastResults.filter((r) => r === "lose").length}
-								</span>
-							</div>
-						</div>
-
-						<div className="">
-							<div className="text-sm text-gray-400">Total Bets</div>
-							<div className="text-xl font-bold text-blue-300">
-								{lastResults.length}
-							</div>
+				<div className="grid grid-cols-2 gap-4">
+					<div className="">
+						<div className="text-sm text-gray-400">Moon/Crash</div>
+						<div className="text-xl font-bold">
+							<span className="text-green-400">
+								{lastResults.filter((r) => r === "win").length}
+							</span>
+							/
+							<span className="text-red-400">
+								{lastResults.filter((r) => r === "lose").length}
+							</span>
 						</div>
 					</div>
-				</CardContent>
-			</Card>
+
+					<div className="">
+						<div className="text-sm text-gray-400">Total Bets</div>
+						<div className="text-xl font-bold text-blue-300">
+							{lastResults.length}
+						</div>
+					</div>
+				</div>
+			</div>
+			{/* </Card> */}
 
 			{/* History card */}
-			<Card className="bg-[url('/history.webp')] bg-cover bg-center border-none">
-				<CardContent className="p-6 border-none">
-					<h2 className="text-xl gap-2 font-bold mb-4 flex items-center text-[#7db0ef]">
-						<Image src="/time.webp" width={35} height={35} alt="icon" />
-						Game History
-					</h2>
+			{/* <C className="bg-[url('/history.webp')] bg-cover bg-center border-none"> */}
+			<div className="w-full p-6 bg-[url(/history.webp)] bg-center bg-cover bg-no-repeat bg-[100, 100]">
+				<h2 className="text-xl gap-2 font-bold mb-4 flex items-center text-[#7db0ef]">
+					<Image src="/time.webp" width={35} height={35} alt="icon" />
+					Game History
+				</h2>
 
-					<div className="flex flex-wrap gap-2">
-						{lastResults.length > 0 ? (
-							lastResults.map((result, index) => (
-								<div key={index} className="relative">
-									{result === "win" ? (
-										<Moon className="w-6 h-6 text-blue-200 fill-blue-200" />
-									) : (
-										<Moon className="w-6 h-6 text-red-400" />
-									)}
-								</div>
-							))
-						) : (
-							<p className="text-gray-500">No launches yet</p>
-						)}
-					</div>
-				</CardContent>
-			</Card>
+				<div className="flex flex-wrap gap-2">
+					{lastResults.length > 0 ? (
+						lastResults.map((result, index) => (
+							<div key={index} className="relative">
+								{result === "win" ? (
+									<Moon className="w-6 h-6 text-blue-200 fill-blue-200" />
+								) : (
+									<Moon className="w-6 h-6 text-red-400" />
+								)}
+							</div>
+						))
+					) : (
+						<p className="text-gray-500">No launches yet</p>
+					)}
+				</div>
+			</div>
+			{/* </C> */}
 
 			{/* Actions card */}
 			{/* <Card className="bg-black/40 border-blue-500/30 backdrop-blur-sm">
