@@ -18,7 +18,7 @@ export default function Footer() {
               className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors"
               aria-label="Follow us on Twitter/X"
             >
-              <Twitter size={18} />
+              <Image src="/twitter.webp" alt="twitter" width={18} height={18} />
               <span className="text-sm">Follow us on X</span>
             </a>
 
@@ -28,7 +28,7 @@ export default function Footer() {
               className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors"
               aria-label="Join our Telegram"
             >
-              <Send size={18} />
+            <Image src="/telegram.webp" alt="telegram" width={18} height={18} />
               <span className="text-sm">Join Telegram</span>
             </a>
             <a
@@ -49,8 +49,6 @@ export default function Footer() {
               <span className="text-sm">Proof Of Fairness</span>
             </a>
           </div>
-
-         
         </div>
       </div>
     </footer>
