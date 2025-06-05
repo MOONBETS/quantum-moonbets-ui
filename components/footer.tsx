@@ -3,12 +3,12 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 mt-auto border-t border-blue-900/30 bg-black/30 backdrop-blur-sm">
+    <footer className="relative z-10 mt-auto">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center gap-2 mb-4 md:mb-0">
-            <Image height={40} width={40} src="/logo.png" alt="LOGO" />
-            <span className="text-lg font-bold text-blue-200">MOONBETS</span>
+        <div className="flex flex-col justify-between items-center">
+          <div className="flex items-center gap-2 mb-4">
+            <Image height={100} width={100} src="/logo.webp" alt="LOGO" />
+            {/* <span className="text-lg font-bold text-blue-200">MOONBETS</span> */}
           </div>
 
           <div className="flex flex-wrap justify-center items-center gap-6">
@@ -50,9 +50,7 @@ export default function Footer() {
             </a>
           </div>
 
-          <div className="mt-4 md:mt-0 text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} MoonBets. All rights reserved.
-          </div>
+         
         </div>
       </div>
     </footer>
