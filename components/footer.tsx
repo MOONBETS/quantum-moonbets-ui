@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export default function Footer() {
 	return (
-		<footer className="relative z-10 mt-auto">
-			<div className="container mx-auto px-4 py-6">
+		<footer className="relative z-10 mt-auto pb-2">
+			<div className="container mx-auto px-4 ">
 				<div className="flex flex-col justify-between items-center">
 					<div className="flex items-center ">
 						<Image height={100} width={100} src="/logo.webp" alt="LOGO" />

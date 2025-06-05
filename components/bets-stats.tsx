@@ -2,6 +2,7 @@ import React, { Dispatch, SetStateAction } from "react";
 import { Rocket, Moon, History } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
+import Image from "next/image";
 
 type StatsProps = {
 	lastResults: ("win" | "lose")[];
@@ -26,8 +27,9 @@ export default function Stats({
 		<div className="space-y-6 ">
 			<Card className="bg-transparent border-none">
 				<CardContent className="p-6 border-none">
-					<h2 className="text-xl font-bold mb-4 flex items-center text-blue-300">
-						<Rocket className="w-5 h-5 mr-2" />
+					<h2 className="text-xl font-bold mb-4 gap-2 flex items-center text-[#7db0ef]">
+						{/* <Rocket className="w-5 h-5 mr-2" /> */}
+						<Image src="/rocket.webp" width={35} height={35} alt="icon" />
 						Game Stats
 					</h2>
 
@@ -56,10 +58,10 @@ export default function Stats({
 			</Card>
 
 			{/* History card */}
-			<Card className="bg-transparent">
+			<Card className="bg-[url('/history.webp')] bg-cover bg-center border-none">
 				<CardContent className="p-6 border-none">
-					<h2 className="text-xl font-bold mb-4 flex items-center text-blue-300">
-						<History className="w-5 h-5 mr-2" />
+					<h2 className="text-xl gap-2 font-bold mb-4 flex items-center text-[#7db0ef]">
+						<Image src="/time.webp" width={35} height={35} alt="icon" />
 						Game History
 					</h2>
 
@@ -85,16 +87,19 @@ export default function Stats({
 			{/* <Card className="bg-black/40 border-blue-500/30 backdrop-blur-sm">
 				<CardContent className="p-6 space-y-3"> */}
 
-			<Button
-				variant="outline"
-				className="w-full text-green-300"
+			<button
+				// variant="outline"
+				className="w-full text-center text-lg font-semibold relative text-[#ebd886] bg-[url('/withdraw-bg.webp')] h-[70px] bg-cover bg-center"
 				onClick={onWithdraw}
-				disabled={!walletConnected || pendingWithdrawal <= 0 || isSpinning}
+				// disabled={!walletConnected || pendingWithdrawal <= 0 || isSpinning}
 			>
-				<div className="bg-[url(/withdraw-bg.webp)] w-full h-full">
-					Withdraw {pendingWithdrawal.toFixed(4)} SOL
-				</div>
-			</Button>
+				{/* <div> */}
+				{/* <Image src="/withdraw-bg.webp" width={200} height={40} alt="Button" /> */}
+				{/* </div> */}
+				{/* <div className="bg-[url(/withdraw-bg.webp)] w-full h-full"> */}
+				<p className="pb-2.5">Withdraw {pendingWithdrawal.toFixed(4)} SOL</p>
+				{/* </div> */}
+			</button>
 			{/* </CardContent>
 			</Card> */}
 		</div>
