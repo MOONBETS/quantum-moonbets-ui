@@ -82,18 +82,21 @@ export default function Stats({
 			</Card>
 
 			{/* Actions card */}
-			<Card className="bg-black/40 border-blue-500/30 backdrop-blur-sm">
-				<CardContent className="p-6 space-y-3">
-					<Button
-						variant="outline"
-						className="w-full border-green-400 text-green-300 hover:bg-green-600/20"
-						onClick={onWithdraw}
-						disabled={!walletConnected || pendingWithdrawal <= 0 || isSpinning}
-					>
-						Withdraw {pendingWithdrawal.toFixed(4)} SOL
-					</Button>
-				</CardContent>
-			</Card>
+			{/* <Card className="bg-black/40 border-blue-500/30 backdrop-blur-sm">
+				<CardContent className="p-6 space-y-3"> */}
+
+			<Button
+				variant="outline"
+				className="w-full text-green-300"
+				onClick={onWithdraw}
+				disabled={!walletConnected || pendingWithdrawal <= 0 || isSpinning}
+			>
+				<div className="bg-[url(/withdraw-bg.webp)] w-full h-full">
+					Withdraw {pendingWithdrawal.toFixed(4)} SOL
+				</div>
+			</Button>
+			{/* </CardContent>
+			</Card> */}
 		</div>
 	);
 }

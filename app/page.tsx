@@ -702,19 +702,21 @@ export default function CasinoGame() {
 					<div className="flex flex-col col-span-1 bg-[url('/bg.jpg')] bg-center bg-contain">
 						{/* Stats card */}
 
-						<div className="flex-grow px-10">
+						<div className="flex-grow ">
 							<div className="hidden md:flex pt-8 pr-8 justify-end">
 								<WalletMultiButton className="hidden sm:block bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white py-2 px-4 rounded-md" />
 							</div>
-							<Stats
-								walletConnected={connected}
-								setBalance={setBalance}
-								balance={balance}
-								isSpinning={isSpinning}
-								lastResults={lastResults}
-								pendingWithdrawal={safeParseAmount(stats?.pendingWithdrawal)}
-								onWithdraw={withdrawWinnings}
-							/>
+							<div className="w-full max-w-[300px] mx-auto">
+								<Stats
+									walletConnected={connected}
+									setBalance={setBalance}
+									balance={balance}
+									isSpinning={isSpinning}
+									lastResults={lastResults}
+									pendingWithdrawal={safeParseAmount(stats?.pendingWithdrawal)}
+									onWithdraw={withdrawWinnings}
+								/>
+							</div>
 						</div>
 						<Footer />
 					</div>
