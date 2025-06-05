@@ -34,7 +34,7 @@ export default function Stats({
 				</h2>
 
 				<div className="grid grid-cols-2 gap-4">
-					<div className="bg-[url('/stats-card.webp')]">
+					<div className="col-span-1 bg-[url('/stats-card.webp')] bg-cover bg-center bg-no-repeat">
 						<div className="text-sm text-gray-400">Moon/Crash</div>
 						<div className="text-xl font-bold">
 							<span className="text-green-400">
@@ -47,7 +47,7 @@ export default function Stats({
 						</div>
 					</div>
 
-					<div className="bg-[url('/stats-card.webp')]">
+					<div className="col-span-1 bg-[url('/stats-card.webp')] bg-cover bg-center bg-no-repeat">
 						<div className="text-sm text-gray-400">Total Bets</div>
 						<div className="text-xl font-bold text-blue-300">
 							{lastResults.length}
