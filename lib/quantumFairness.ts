@@ -1,3 +1,4 @@
+// quantum fairness.ts
 export interface QuantumLog {
   timestamp: number;       // High-precision timestamp
   quantum: number;         // Quantum Value (Q)
