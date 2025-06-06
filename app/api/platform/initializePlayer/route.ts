@@ -57,8 +57,7 @@ export async function POST(req: NextRequest) {
                 .accountsPartial({
                     payer: userPubkey,
                     player: playerPda,
-                    platformStats: platformStats,
-                    systemProgram: SystemProgram.programId,
+                    platformStats: platformStats
                 })
                 .instruction();
         } catch (e) {

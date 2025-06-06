@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/moonbets.json`.
  */
 export type Moonbets = {
-  "address": "EcfXxkWLJZsQdGcePRAufm9Q9MMAkQaFd4AMWCKCq6KY",
+  "address": "CyANVDG4GNTj9YiRxg22sLoXeczP2Mymd2mHL8NrXXRB",
   "metadata": {
     "name": "moonbets",
     "version": "0.1.0",
@@ -263,72 +263,6 @@ export type Moonbets = {
         {
           "name": "amount",
           "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "callbackRollDice",
-      "discriminator": [
-        129,
-        76,
-        217,
-        160,
-        252,
-        234,
-        19,
-        238
-      ],
-      "accounts": [
-        {
-          "name": "vrfProgramIdentity",
-          "docs": [
-            "This check ensure that the vrf_program_identity (which is a PDA) is a singer",
-            "enforcing the callback is executed by the VRF program trough CPI"
-          ],
-          "signer": true,
-          "address": "9irBy75QS2BN81FUgXuHcjqceJJRuc9oDkAe8TKVvvAw"
-        },
-        {
-          "name": "player",
-          "writable": true
-        },
-        {
-          "name": "platformStats",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  108,
-                  97,
-                  116,
-                  102,
-                  111,
-                  114,
-                  109,
-                  95,
-                  115,
-                  116,
-                  97,
-                  116,
-                  115
-                ]
-              }
-            ]
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "randomness",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
         }
       ]
     },
@@ -606,46 +540,13 @@ export type Moonbets = {
           }
         },
         {
-          "name": "oracleQueue",
-          "writable": true,
-          "address": "Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh"
-        },
-        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "programIdentity",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  105,
-                  100,
-                  101,
-                  110,
-                  116,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "vrfProgram",
-          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
-        },
-        {
-          "name": "slotHashes",
-          "address": "SysvarS1otHashes111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "userChoice",
+          "name": "quantumNoise",
           "type": "u8"
         },
         {
@@ -653,45 +554,8 @@ export type Moonbets = {
           "type": "u64"
         },
         {
-          "name": "clientSeed",
+          "name": "quantumIstResult",
           "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "processUndelegation",
-      "discriminator": [
-        196,
-        28,
-        41,
-        206,
-        48,
-        37,
-        51,
-        167
-      ],
-      "accounts": [
-        {
-          "name": "baseAccount",
-          "writable": true
-        },
-        {
-          "name": "buffer"
-        },
-        {
-          "name": "payer",
-          "writable": true
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "accountSeeds",
-          "type": {
-            "vec": "bytes"
-          }
         }
       ]
     },
@@ -1266,7 +1130,7 @@ export type Moonbets = {
             "type": "pubkey"
           },
           {
-            "name": "userChoice",
+            "name": "quantumNoise",
             "type": "u8"
           },
           {

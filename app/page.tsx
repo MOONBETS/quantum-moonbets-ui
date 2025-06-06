@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import BetProgressOverlay from "@/components/ui/BetProgressOverlay";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { RotateCcw, Coins } from "lucide-react";
-import confetti from "canvas-confetti";
+// import confetti from "canvas-confetti";
 import MoonBackground from "@/components/moon-background";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/footer";
@@ -24,6 +23,15 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { toast } from "react-hot-toast";
 import { DiceRolledEvent } from "./types/events";
 import SuccessModal from "@/components/ui/SuccessModal";
+import {
+  generateQuantumLog,
+  verifyQuantumLog,
+  QuantumLog,
+} from "../lib/quantumFairness";
+import QuantumAnimation, {
+  AnimatedValues,
+} from "@/components/ui/QuantumReveal";
+import confetti from "canvas-confetti";
 import Image from "next/image";
 
 export default function CasinoGame() {
@@ -39,9 +47,15 @@ export default function CasinoGame() {
   const [playerPda, setPlayerPda] = useState<PublicKey | null>(null);
   const [stats, setStats] = useState<Player | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [showBetProgress, setShowBetProgress] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // QUANTUM EMISSION
+  const [finalLog, setFinalLog] = useState<QuantumLog | null>(null);
+  const [displayed, setDisplayed] = useState<AnimatedValues | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [verified, setVerified] = useState<boolean | null>(null);
+  const [particlesResolved, setParticlesResolved] = useState<boolean>(false);
 
   const programID = new web3.PublicKey(idl.address);
   const COMMITMENT = "confirmed";
@@ -101,6 +115,34 @@ export default function CasinoGame() {
     return data.playerAccount as Player; // Contains playerPda and playerAccount
   };
 
+  useEffect(() => {
+    if (revealed && showResult === "win") {
+      confetti({
+        particleCount: 100,
+        spread: 200,
+        origin: { y: 0.6 },
+        colors: [
+          "#f44336",
+          "#e91e63",
+          "#9c27b0",
+          "#673ab7",
+          "#3f51b5",
+          "#2196f3",
+          "#03a9f4",
+          "#00bcd4",
+          "#009688",
+          "#4CAF50",
+          "#8BC34A",
+          "#CDDC39",
+          "#FFEB3B",
+          "#FFC107",
+          "#FF9800",
+          "#FF5722",
+        ],
+      });
+    }
+  }, [revealed, showResult]);
+
   // First useEffect - Initialize program when wallet changes
   useEffect(() => {
     if (!publicKey || !signTransaction || !signAllTransactions) {
@@ -112,9 +154,15 @@ export default function CasinoGame() {
       return;
     }
 
+    // Connect to the Solana network
+    const connection_ = new web3.Connection(
+      web3.clusterApiUrl("mainnet-beta"),
+      COMMITMENT
+    );
+
     // Reinitialize program with the new wallet
     const provider = new AnchorProvider(
-      connection,
+      connection_,
       { publicKey, signTransaction, signAllTransactions } as any,
       { commitment: COMMITMENT }
     );
@@ -282,6 +330,24 @@ export default function CasinoGame() {
     }
   };
 
+  const initQuantumParticles = () => {
+    const log = generateQuantumLog();
+    setFinalLog(log);
+    setVerified(verifyQuantumLog(log));
+    setRevealed(false);
+
+    // Start from near-zero noise
+    const starting: AnimatedValues = {
+      quantum: Math.random() * 0.0001,
+      adjustedChance: Math.random() * 0.0001,
+      entropy: Math.random() * 0.0001,
+      confidence: Math.random() * 0.0001,
+      variation: 0,
+    };
+
+    return { starting, log };
+  };
+
   // Place a bet
   const placeBet = async () => {
     if (
@@ -295,6 +361,14 @@ export default function CasinoGame() {
       return;
     }
 
+    const result = initQuantumParticles();
+    const starting = result.starting;
+    const log = result.log;
+    // resolve sine particles
+    const particlesResolution = finalLog && finalLog?.success ? 1 : 0;
+    setParticlesResolved(particlesResolution === 1 ? true : false);
+    console.log("particlesResolved:", particlesResolved);
+
     try {
       setIsSpinning(true);
       setShowResult(null);
@@ -305,6 +379,7 @@ export default function CasinoGame() {
       const requestBody = {
         publicKey: publicKey.toBase58(),
         betAmount: betAmountLamports,
+        particlesResolved: particlesResolved,
       };
 
       // Get the transaction
@@ -327,8 +402,6 @@ export default function CasinoGame() {
       if (data.error) throw new Error(data.error);
       if (!data.transaction) throw new Error("No transaction returned");
 
-      const oldPlayer = data.oldPlayer;
-
       console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
@@ -337,44 +410,60 @@ export default function CasinoGame() {
       const sig = await connection.sendRawTransaction(signed.serialize());
 
       console.log("Transaction sent with signature:", sig);
-      setShowBetProgress(true); // SHOW animated overlay here
 
       await connection.confirmTransaction(sig, "confirmed");
       console.log("Transaction confirmed. Polling for result...");
 
-      const resultData = await waitForBetResult(oldPlayer);
+      setDisplayed(starting);
+      // animateTowardTarget(log, startingFake, 5000);
 
-      if (resultData) {
-        const result: "win" | "lose" = resultData.won ? "win" : "lose";
+      // After 5 seconds, reveal the result
+      setTimeout(() => {
+        setDisplayed({
+          quantum: log.quantum,
+          adjustedChance: log.adjustedChance,
+          entropy: log.entropy,
+          confidence: log.confidence,
+          variation: log.variation,
+        });
+        setRevealed(true);
+      }, 5000);
+
+      if (finalLog) {
+        console.log("Final log:", finalLog);
+        console.log("particlesResolution:", particlesResolution);
+        const result: "win" | "lose" =
+          particlesResolution === 1 ? "win" : "lose";
+        console.log("Bet result:", result);
         setShowResult(result);
 
-        if (result === "win") {
-          setTimeout(() => {
-            confetti({
-              particleCount: 100,
-              spread: 200,
-              origin: { y: 0.6 },
-              colors: [
-                "#f44336",
-                "#e91e63",
-                "#9c27b0",
-                "#673ab7",
-                "#3f51b5",
-                "#2196f3",
-                "#03a9f4",
-                "#00bcd4",
-                "#009688",
-                "#4CAF50",
-                "#8BC34A",
-                "#CDDC39",
-                "#FFEB3B",
-                "#FFC107",
-                "#FF9800",
-                "#FF5722",
-              ],
-            });
-          }, 500);
-        }
+        // if (result === "win") {
+        //   setTimeout(() => {
+        //     confetti({
+        //       particleCount: 100,
+        //       spread: 200,
+        //       origin: { y: 0.6 },
+        //       colors: [
+        //         "#f44336",
+        //         "#e91e63",
+        //         "#9c27b0",
+        //         "#673ab7",
+        //         "#3f51b5",
+        //         "#2196f3",
+        //         "#03a9f4",
+        //         "#00bcd4",
+        //         "#009688",
+        //         "#4CAF50",
+        //         "#8BC34A",
+        //         "#CDDC39",
+        //         "#FFEB3B",
+        //         "#FFC107",
+        //         "#FF9800",
+        //         "#FF5722",
+        //       ],
+        //     });
+        //   }, 500);
+        // }
       } else {
         toast.error("Bet result timeout. Please check your balance.");
       }
@@ -382,12 +471,8 @@ export default function CasinoGame() {
       await getStats();
       await fetchWalletBalance?.();
 
-      // Right before return or error
-      setShowBetProgress(false);
-      return resultData;
+      return;
     } catch (err) {
-      // Right before return or error
-      setShowBetProgress(false);
       console.error("Failed to place bet:", err);
       toast.error(`Bet failed: ${(err as Error).message}`);
       setErrorMessage?.("Failed to place bet: " + (err as Error).message);
@@ -412,18 +497,19 @@ export default function CasinoGame() {
         return null;
       }
 
-      const maxWaitTime = 70000;
+      const maxWaitTime = 60000;
       const interval = 5000;
       const start = Date.now();
 
       while (Date.now() - start < maxWaitTime) {
         try {
-          const player = await getPlayerAccount(playerPda.toBase58());
-          // console.log("Polling player stats...", {
-          //   wins: player.wins,
-          //   losses: player.losses,
-          //   currentBet: player.currentBet,
-          // });
+          // const player = await getPlayerAccount(playerPda.toBase58());
+          const player = await program.account.player.fetch(playerPda);
+          console.log("Polling player stats...", {
+            wins: player.wins,
+            losses: player.losses,
+            currentBet: player.currentBet,
+          });
 
           const hasBetResolved =
             player.currentBet === 0 &&
@@ -431,6 +517,7 @@ export default function CasinoGame() {
               player.losses !== oldPlayer.losses);
 
           if (hasBetResolved) {
+            console.log("Has resolved");
             const won = player.wins > oldPlayer.wins;
             const result: DiceRolledEvent = {
               player: playerPda,
@@ -557,8 +644,17 @@ export default function CasinoGame() {
           </div>
         )}
 
-        {/* In your top-level layout or component */}
-        {showBetProgress && <BetProgressOverlay visible />}
+        {displayed && (
+          <QuantumAnimation
+            visible={true}
+            animatedValues={displayed}
+            revealed={revealed}
+            finalLog={finalLog || undefined}
+            verified={verified || false}
+            onClose={() => setDisplayed(null)} // This will unmount the component
+            particlesResolved={particlesResolved}
+          />
+        )}
 
         <SuccessModal
           visible={showSuccess}
@@ -619,7 +715,7 @@ export default function CasinoGame() {
                   </div>
 
                   {/* Result display */}
-                  {showResult && (
+                  {/* {showResult && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -629,7 +725,7 @@ export default function CasinoGame() {
                     >
                       {showResult === "win" ? "TO THE MOON!" : "CRASHED!"}
                     </motion.div>
-                  )}
+                  )} */}
 
                   <p className="text-lg text-[#87d7fa] text-center max-w-xs">
                     Press BET to launch to the moon and double your bet or

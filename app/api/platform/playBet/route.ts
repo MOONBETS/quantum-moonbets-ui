@@ -3,9 +3,8 @@
  * API route for players to place bets
  * Server creates the transaction, client signs and submits it
  */
-
 import { NextRequest, NextResponse } from "next/server";
-import { SystemProgram, Transaction, PublicKey, SYSVAR_SLOT_HASHES_PUBKEY } from "@solana/web3.js";
+import { Transaction, PublicKey } from "@solana/web3.js";
 import { getProgram, platformStats, platformVault } from "@/lib/solana/program";
 import { BN } from "@coral-xyz/anchor";
 
@@ -13,15 +12,8 @@ import { BN } from "@coral-xyz/anchor";
 interface PlayBetRequest {
     publicKey: string;
     betAmount: string | number;  // In lamports
-    betChoice?: number;  // 1-6, optional
-    clientSeed?: number;  // Optional client seed
-}
-
-interface PlayBetResponse {
-    transaction: string;
-    playerPda: string;
-    betChoice: number;
-    betAmount: string;
+    quantum_noise: number;  // 1-6, optional
+    particlesResolved: number
 }
 
 export async function POST(req: NextRequest) {
@@ -49,8 +41,8 @@ export async function POST(req: NextRequest) {
         // Process and validate inputs
         let userPubkey: PublicKey;
         let betAmount: BN;
-        let betChoice: number;
-        let clientSeed: BN;
+        let particlesResolved: number;
+        let quantumNoise: BN;
 
         try {
             // Parse public key
@@ -63,20 +55,10 @@ export async function POST(req: NextRequest) {
             }
 
             // Parse bet choice (or use random)
-            betChoice = body.betChoice || Math.floor(Math.random() * 6) + 1;
-            if (betChoice < 1 || betChoice > 6) {
-                return NextResponse.json({ error: "Bet choice must be between 1 and 6" }, { status: 400 });
-            }
+            quantumNoise = body.quantum_noise || Math.floor(Math.random() * 6) + 1;
 
-            // Parse client seed (or use default)
-            clientSeed = new BN(body.clientSeed || 42);
+            particlesResolved = body.particlesResolved;
 
-            // console.log("Inputs validated:", {
-            //     userPubkey: userPubkey.toString(),
-            //     betAmount: betAmount.toString(),
-            //     betChoice,
-            //     clientSeed: clientSeed.toString()
-            // });
         } catch (e) {
             console.error("Input validation failed:", e);
             return NextResponse.json({ error: "Invalid input parameters" }, { status: 400 });
@@ -123,13 +105,14 @@ export async function POST(req: NextRequest) {
         let ix;
         try {
             ix = await program.methods
-                .play(betChoice, betAmount, clientSeed)
+                .play(
+                    quantumNoise, betAmount, particlesResolved
+                )
                 .accountsPartial({
                     payer: userPubkey,
                     player: playerPda,
                     platformVault: platformVault,
-                    platformStats: platformStats,
-                    // systemProgram: SystemProgram.programId,
+                    platformStats: platformStats
                 })
                 .instruction();
 
