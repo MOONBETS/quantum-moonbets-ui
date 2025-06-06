@@ -16,9 +16,10 @@ const LAMPORTS_PER_SOL = 1000000000;
 export default function AdminPage() {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
-  const [platformStatsList, setPlatformStatsList] = useState<PlatformStats[]>(
-    []
+  const [platformStatsList, setPlatformStatsList] = useState<PlatformStats>(
+    null as any
   );
+
   const [depositAmount, setDepositAmount] = useState("1");
   const [withdrawAmount, setWithdrawAmount] = useState("1");
   const [platformBalance, setPlatformBalance] = useState<number>(0);
@@ -71,6 +72,12 @@ export default function AdminPage() {
     }
 
     return 0;
+  };
+
+  const safeParseLamports = (value: any): number => {
+    if (!value) return 0;
+
+    return value.toNumber() / LAMPORTS_PER_SOL;
   };
 
   const formatDate = (timestamp: any): string => {
@@ -394,8 +401,6 @@ export default function AdminPage() {
     }
   };
 
-  const currentStats = platformStatsList[0];
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] to-[#1a1a3a] text-white overflow-hidden relative flex flex-col">
       <MoonBackground />
@@ -411,7 +416,7 @@ export default function AdminPage() {
           onClose={() => setShowSuccess(false)}
         />
 
-        {platformStatsList.length === 0 ? (
+        {!platformStatsList || platformStatsList.isInitialized == false ? (
           <div className="bg-[#121232] p-6 rounded-lg border border-blue-800">
             <h2 className="text-xl font-semibold mb-4 text-center">
               🚀 Platform Not Initialized
@@ -450,7 +455,7 @@ export default function AdminPage() {
                     Total Users
                   </p>
                   <p className="text-2xl font-bold text-blue-300">
-                    {formatNumber(safeParseNumber(currentStats?.totalUsers))}
+                    {platformStatsList?.totalUsers}
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-purple-600">
@@ -458,9 +463,7 @@ export default function AdminPage() {
                     Active Users
                   </p>
                   <p className="text-2xl font-bold text-purple-300">
-                    {formatNumber(
-                      safeParseNumber(currentStats?.currentActiveUsers)
-                    )}
+                    {platformStatsList?.currentActiveUsers}
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-yellow-600">
@@ -468,7 +471,7 @@ export default function AdminPage() {
                     Admin Count
                   </p>
                   <p className="text-2xl font-bold text-yellow-300">
-                    {safeParseNumber(currentStats?.adminCount)}
+                    {platformStatsList?.adminCount}
                   </p>
                 </div>
               </div>
@@ -485,7 +488,7 @@ export default function AdminPage() {
                     Total Bets
                   </p>
                   <p className="text-2xl font-bold text-orange-300">
-                    {formatNumber(safeParseNumber(currentStats?.totalBets))}
+                    {platformStatsList?.totalBets}
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-green-600">
@@ -493,7 +496,7 @@ export default function AdminPage() {
                     Total Volume
                   </p>
                   <p className="text-2xl font-bold text-green-300">
-                    {safeParseAmount(currentStats?.totalVolume).toFixed(2)} SOL
+                    {platformStatsList?.totalVolume} SOL
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-cyan-600">
@@ -501,8 +504,7 @@ export default function AdminPage() {
                     Max Bet Limit
                   </p>
                   <p className="text-2xl font-bold text-cyan-300">
-                    {safeParseAmount(currentStats?.maxBetLamports).toFixed(2)}{" "}
-                    SOL
+                    {platformStatsList?.maxBetLamports} SOL
                   </p>
                 </div>
               </div>
@@ -519,7 +521,7 @@ export default function AdminPage() {
                     Total Profit
                   </p>
                   <p className="text-2xl font-bold text-green-300">
-                    {safeParseAmount(currentStats?.totalProfit).toFixed(4)} SOL
+                    {platformStatsList?.totalProfit} SOL
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-red-600">
@@ -527,7 +529,7 @@ export default function AdminPage() {
                     Total Owed
                   </p>
                   <p className="text-2xl font-bold text-red-300">
-                    {safeParseAmount(currentStats?.totalOwed).toFixed(4)} SOL
+                    {platformStatsList?.totalOwed} SOL
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-orange-600">
@@ -535,8 +537,7 @@ export default function AdminPage() {
                     Withdrawn Today
                   </p>
                   <p className="text-2xl font-bold text-orange-300">
-                    {safeParseAmount(currentStats?.withdrawnToday).toFixed(4)}{" "}
-                    SOL
+                    {platformStatsList?.withdrawnToday} SOL
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-purple-600">
@@ -544,10 +545,7 @@ export default function AdminPage() {
                     Daily Limit
                   </p>
                   <p className="text-2xl font-bold text-purple-300">
-                    {safeParseAmount(currentStats?.dailyWithdrawLimit).toFixed(
-                      2
-                    )}{" "}
-                    SOL
+                    {platformStatsList?.dailyWithdrawLimit} SOL
                   </p>
                 </div>
               </div>
@@ -564,7 +562,7 @@ export default function AdminPage() {
                     Initialization Status
                   </p>
                   <p className="text-xl font-bold text-green-300">
-                    {currentStats?.isInitialized
+                    {platformStatsList?.isInitialized
                       ? "✅ Initialized"
                       : "❌ Not Initialized"}
                   </p>
@@ -574,7 +572,7 @@ export default function AdminPage() {
                     Last Reset
                   </p>
                   <p className="text-xl font-bold text-gray-300">
-                    {formatDate(currentStats?.lastReset)}
+                    {formatDate(platformStatsList?.lastReset)}
                   </p>
                 </div>
                 <div className="bg-[#1a1a3a] p-4 rounded-lg border border-gray-600">
@@ -582,8 +580,8 @@ export default function AdminPage() {
                     Primary Admin
                   </p>
                   <p className="text-sm font-mono text-gray-300 break-all">
-                    {currentStats?.primaryAdmin
-                      ? currentStats.primaryAdmin.toString()
+                    {platformStatsList?.primaryAdmin
+                      ? platformStatsList.primaryAdmin.toString()
                       : "Not set"}
                   </p>
                 </div>
@@ -592,11 +590,11 @@ export default function AdminPage() {
                     Daily Withdrawal Date
                   </p>
                   <p className="text-xl font-bold text-gray-300">
-                    {formatDate(currentStats?.dailyWithdrawal?.date)}
+                    {formatDate(platformStatsList?.dailyWithdrawal?.date)}
                     <span className="text-sm text-gray-400 ml-2">
                       (
                       {safeParseAmount(
-                        currentStats?.dailyWithdrawal?.amount
+                        platformStatsList?.dailyWithdrawal?.amount
                       ).toFixed(4)}{" "}
                       SOL)
                     </span>
