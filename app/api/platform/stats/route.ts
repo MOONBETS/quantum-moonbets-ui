@@ -29,7 +29,7 @@ export async function GET() {
         const maxBetLamports = platform.maxBetLamports.toNumber() / LAMPORTS_PER_SOL; // Convert to SOL
         const dailyWithdrawLimit = platform.dailyWithdrawLimit.toNumber() / LAMPORTS_PER_SOL; // Convert to SOL
 
-        console.log("=== Full Platform Stats ===");
+        // console.log("=== Full Platform Stats ===");
         
         const platformData = {
             isInitialized,
@@ -47,7 +47,7 @@ export async function GET() {
             maxBetLamports,
             dailyWithdrawLimit,
         };
-        console.log("Platform Stats:", platformData);
+        // console.log("Platform Stats:", platformData);
         return NextResponse.json(platformData, { status: 200 });
     } catch (err) {
         console.error("Failed to load platform stats", err);

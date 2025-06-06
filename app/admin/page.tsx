@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { BN, web3 } from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 import idl from "../moonbets.json";
 import { PlatformStats } from "../types/accounts";
 import { toast } from "react-hot-toast";
