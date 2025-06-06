@@ -566,11 +566,11 @@ export default function CasinoGame() {
           onClose={() => setShowSuccess(false)}
         />
 
-        <div className="grid md:grid-cols-3 relative">
-          <Card className="pb-10 relative bg-[url('/bg2.jpg')] bg-center lg:col-span-2 border-blue-500/30 overflow-hidden bg-transparent rounded-none">
+        <div className="grid md:grid-cols-3 relative w-full">
+          <Card className=" relative bg-[url('/bg2.jpg')] bg-center lg:col-span-2 border-blue-500/30 overflow-hidden bg-transparent rounded-none">
             <div className="absolute bg-[#00046b]/50 top-0 left-0 w-full h-full"></div>
             <CardContent className="p-0 rounded-none">
-              <div className="relative h-full pt-5 px-5 md:px-0 md:pl-5">
+              <div className="relative h-full pt-3 px-5 md:px-0 md:pl-5">
                 {/* Background decoration */}
                 <div className="flex items-center justify-between">
                   <Image width={100} height={100} src="/logo.webp" alt="LOGO" />
@@ -580,14 +580,14 @@ export default function CasinoGame() {
                 </div>
                 <div className="relative px-8 flex flex-col items-center justify-center min-h-[400px]">
                   {/* Bet amount input with fancy border */}
-                  <div className="mb-8 w-full max-w-xs">
+                  <div className="mb-7 w-full max-w-xs">
                     <label className="block text-center mb-2 text-xl font-bold text-blue-200">
                       <Image
                         src="/bet-amount.webp"
                         width={250}
                         height={42}
                         alt="Bet Amount"
-                        className="block mx-auto h-auto w-auto"
+                        className="block mx-auto"
                       />
                     </label>
                     <div className="relative">
@@ -642,8 +642,8 @@ export default function CasinoGame() {
                     className="relative"
                   >
                     <Image
-                      width={150}
-                      height={50}
+                      width={200}
+                      height={200}
                       src="/button.webp"
                       alt="Bet button"
                     />
@@ -701,11 +701,12 @@ export default function CasinoGame() {
 
           <div className="flex flex-col col-span-1 bg-[url('/bg.jpg')] bg-center bg-contain">
             {/* Stats card */}
-            <div className="flex-grow ">
+
+            <div className="">
               <div className="hidden md:flex pt-8 pr-8 justify-end">
                 <WalletMultiButton className="hidden sm:block bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white py-2 px-4 rounded-md" />
               </div>
-              <div className="w-full max-w-[250px] mx-auto">
+              <div className="w-full max-w-[300px] mx-auto">
                 <Stats
                   walletConnected={connected}
                   setBalance={setBalance}
@@ -720,6 +721,8 @@ export default function CasinoGame() {
             <Footer />
           </div>
         </div>
+
+        {/* <Particles /> */}
       </div>
     </div>
   );

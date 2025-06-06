@@ -38,7 +38,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Moon Bet || Double or Nothing</title>
       </head>
-      <body>
+      <body className="bg-[#15057f]">
         <SolanaProviders>
           {children}
         </SolanaProviders>
