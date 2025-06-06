@@ -367,7 +367,7 @@ export default function CasinoGame() {
     // resolve sine particles
     const particlesResolution = finalLog && finalLog?.success ? 1 : 0;
     setParticlesResolved(particlesResolution === 1 ? true : false);
-    console.log("particlesResolved:", particlesResolved);
+    // console.log("particlesResolved:", particlesResolved);
 
     try {
       setIsSpinning(true);
@@ -402,17 +402,17 @@ export default function CasinoGame() {
       if (data.error) throw new Error(data.error);
       if (!data.transaction) throw new Error("No transaction returned");
 
-      console.log("Deserializing and signing transaction...");
+      // console.log("Deserializing and signing transaction...");
       const txBuffer = Buffer.from(data.transaction, "base64");
       const tx = web3.Transaction.from(txBuffer);
 
       const signed = await signTransaction(tx);
       const sig = await connection.sendRawTransaction(signed.serialize());
 
-      console.log("Transaction sent with signature:", sig);
+      // console.log("Transaction sent with signature:", sig);
 
       await connection.confirmTransaction(sig, "confirmed");
-      console.log("Transaction confirmed. Polling for result...");
+      // console.log("Transaction confirmed. Polling for result...");
 
       setDisplayed(starting);
       // animateTowardTarget(log, startingFake, 5000);
@@ -430,11 +430,11 @@ export default function CasinoGame() {
       }, 5000);
 
       if (finalLog) {
-        console.log("Final log:", finalLog);
-        console.log("particlesResolution:", particlesResolution);
+        // console.log("Final log:", finalLog);
+        // console.log("particlesResolution:", particlesResolution);
         const result: "win" | "lose" =
           particlesResolution === 1 ? "win" : "lose";
-        console.log("Bet result:", result);
+        // console.log("Bet result:", result);
         setShowResult(result);
 
         // if (result === "win") {
@@ -479,93 +479,6 @@ export default function CasinoGame() {
       throw err;
     } finally {
       setIsSpinning(false);
-    }
-  };
-
-  /**
-   * Wait for the result of a bet using both event listener and polling
-   * @param oldPlayer Previous player state
-   * @param eventPromise Promise for the DiceRolled event
-   * @param listener Event listener ID
-   */
-  const waitForBetResult = async (
-    oldPlayer: any
-  ): Promise<DiceRolledEvent | null> => {
-    try {
-      if (!publicKey || !connection || !program || !playerPda) {
-        toast.error("Wallet not connected");
-        return null;
-      }
-
-      const maxWaitTime = 60000;
-      const interval = 5000;
-      const start = Date.now();
-
-      while (Date.now() - start < maxWaitTime) {
-        try {
-          // const player = await getPlayerAccount(playerPda.toBase58());
-          const player = await program.account.player.fetch(playerPda);
-          console.log("Polling player stats...", {
-            wins: player.wins,
-            losses: player.losses,
-            currentBet: player.currentBet,
-          });
-
-          const hasBetResolved =
-            player.currentBet === 0 &&
-            (player.wins !== oldPlayer.wins ||
-              player.losses !== oldPlayer.losses);
-
-          if (hasBetResolved) {
-            console.log("Has resolved");
-            const won = player.wins > oldPlayer.wins;
-            const result: DiceRolledEvent = {
-              player: playerPda,
-              result: won ? 1 : 0,
-              won,
-              payout: player.pendingWithdrawal,
-            };
-
-            console.log("Result found via polling:", {
-              won,
-              payout: result.payout.toString(),
-            });
-
-            setBetAmount(0.01); // Reset bet amount on error
-
-            return result;
-          }
-        } catch (error) {
-          console.error("Error polling player account:", error);
-          // Continue to next polling interval
-        }
-
-        await new Promise((res) => setTimeout(res, interval));
-      }
-
-      // console.warn("Polling timed out without detecting a result.");
-      setBetAmount(0.01); // Reset bet amount on error
-      // Return loss result if timeout happens
-      return {
-        player: playerPda,
-        result: 0,
-        won: false,
-        payout: BN(0),
-      };
-    } catch (err) {
-      console.error("Failed to poll result:", err);
-      setBetAmount(0.01); // Reset bet amount on error
-      if (playerPda) {
-        return {
-          player: playerPda,
-          result: 0,
-          won: false,
-          payout: BN(0),
-        };
-      } else {
-        setBetAmount(0.01); // Reset bet amount on error
-        return null;
-      }
     }
   };
 

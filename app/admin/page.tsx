@@ -27,6 +27,7 @@ export default function AdminPage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const safeParseAmount = (value: any): number => {
+    // console.log("safeParseAmount value:", value);
     if (!value) return 0;
 
     // Handle BN objects
@@ -53,18 +54,18 @@ export default function AdminPage() {
   const safeParseNumber = (value: any): number => {
     if (!value) return 0;
 
-    // Handle BN objects
+    // If value is BN-like.
     if (typeof value.toNumber === "function") {
       return value.toNumber();
     }
 
-    // Handle string numbers
     if (typeof value === "string") {
+      // Check if the string is hexadecimal (contains letters a-f)
+      const isHex = /^[0-9a-fA-F]+$/.test(value);
       const cleanValue = value.replace(/^0+/, "") || "0";
-      return parseInt(cleanValue, 10);
+      return isHex ? parseInt(cleanValue, 16) : parseInt(cleanValue, 10);
     }
 
-    // Handle plain numbers
     if (typeof value === "number") {
       return value;
     }
