@@ -5,12 +5,6 @@ import idl from "@/app/moonbets.json";
 import { MoonbetsProgram } from "@/app/types/program";
 
 const secret = [
-    144, 112, 15, 229, 213, 155, 175, 224, 10, 190, 15,
-    240, 206, 31, 46, 22, 215, 223, 211, 17, 167, 73,
-    70, 197, 160, 53, 84, 39, 35, 205, 53, 198, 11,
-    254, 88, 27, 225, 64, 3, 167, 250, 25, 29, 110,
-    16, 28, 144, 156, 83, 131, 241, 33, 48, 142, 22,
-    232, 252, 119, 43, 109, 220, 57, 4, 88
 ];
 const dummyKeypair = Keypair.fromSecretKey(new Uint8Array(secret));
 
