@@ -8,7 +8,7 @@ export interface QuantumLog {
   success: boolean;        // Final result
 }
 
-const PROBABILITY_TARGET = 0.16; // 16% chance to win
+const PROBABILITY_TARGET = 0.5; // 50% chance to win
 
 export const generateQuantumLog = (timestamp: number = Date.now()): QuantumLog => {
   const quantum = Math.abs(Math.sin(timestamp * 0.00000001)); // Q
